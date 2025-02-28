@@ -20,7 +20,6 @@ class Graphics:
         return 1 / delta
 
     def displayTable(self, map, screen, camX, camY):
-        print(len(map))
         size = (len(map))
         screen.fill((0, 0, 0))
         for y in range(size // 2):

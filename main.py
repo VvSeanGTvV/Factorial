@@ -1,4 +1,6 @@
 import random
+from tkinter import Image
+
 import pygame
 import sys
 
@@ -25,9 +27,10 @@ camY = 0
 getTicksLastFrame = 0
 Graphic = Graphics()
 
-velcoity = 0
-speed = 1
-maxVel = 10
+velX = 0
+velY = 0
+speed = 0.1
+maxVel = 50
 
 Map = []
 def createMap(mapSize):
@@ -39,10 +42,11 @@ def createMap(mapSize):
             c = rand.randint(0, len(tileSelect) - 1)
             if (p >= 1):
                 c = rand.randint(0, len(tileSelect) - 1)
+
             Map.append(pygame.image.load(tileSelect[c]))
 
 
-createMap(10)
+createMap(16)
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -55,24 +59,40 @@ while running:
     clock.tick(120)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_a]:
-        velcoity += speed * gameSpeed
-        camX += velcoity
+        velX += speed * gameSpeed
     if keys[pygame.K_d]:
-        velcoity += speed * gameSpeed
-        camX += -velcoity
-    if keys[pygame.K_w]:
-        velcoity += speed * gameSpeed
-        camY += velcoity
-    if keys[pygame.K_s]:
-        velcoity += speed * gameSpeed
-        camY += -velcoity
+        velX -= speed * gameSpeed
 
-    velcoity -= velcoity / 10
-    if (velcoity > maxVel):
-        velcoity = maxVel
-    if (velcoity < 0):
-        velcoity = 0
-    print(camX, camY)
+    if keys[pygame.K_w]:
+        velY += speed * gameSpeed
+    if keys[pygame.K_s]:
+        velY -= speed * gameSpeed
+
+    camX += velX
+    camY += velY
+
+    if (velX > maxVel / 10):
+        velX -= velX / maxVel
+
+    if (velX < -maxVel / 10):
+        velX += -velX / maxVel
+
+
+    if (velX < 0):
+        velX += -velX / maxVel
+    if (velX > 0):
+        velX -= velX / maxVel
+
+    if (velY > maxVel / 10):
+        velY -= velY / maxVel
+    if (velY < -maxVel / 10):
+        velY += -velY / maxVel
+
+    if (velY < 0):
+        velY += -velY / maxVel
+    if (velY > 0):
+        velY -= velY / maxVel
+    # print(velX, velY)
     Graphic.displayTable(Map, screen, camX, camY)
     # Draw a circle
     # pygame.draw.circle(screen, (255, 255, 255), (width // 2, height // 2), 50)  # White circle in the center
