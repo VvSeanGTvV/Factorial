@@ -50,9 +50,7 @@ while running:
             running = False
 
     # HANDLER FPS
-    delta = Graphic.delta()
-    fps = 1 / delta
-    gameSpeed = 120 / fps
+    gameSpeed = 120 / Graphic.getFPS()
 
     clock.tick(120)
     keys = pygame.key.get_pressed()

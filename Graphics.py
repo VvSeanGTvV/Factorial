@@ -7,12 +7,17 @@ class Graphics:
     def __init__(self):
         self.getTicksLastFrame = 0
 
+    # DELTA SYSTEM
     def delta(self):
         t = pygame.time.get_ticks()
         # deltaTime in seconds.
         deltaTime = (t - self.getTicksLastFrame) / 1000.0
         self.getTicksLastFrame = t
         return deltaTime
+
+    def getFPS(self):
+        delta = self.delta()
+        return 1 / delta
 
     def displayTable(self, map, screen, camX, camY):
         print(len(map))
