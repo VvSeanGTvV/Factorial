@@ -1,7 +1,6 @@
 ## BUILD FOLDER
 build/
-build/dist/
-build/dist/*
+dist/
 
 ## IDEA
 .idea/
