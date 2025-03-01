@@ -32,25 +32,15 @@ speed = 0.1
 maxVel = 50
 
 
-def createMap(mapSize):
-    DataX = []
-    DataY = []
-    rand = random.Random()
-    tileSelect = ["basalt1.png", "arkycite-floor.png", "gold-sand1.png"]
-    for y in range(mapSize):
-        for x in range(mapSize):
-            p = rand.randint(0, 2) + rand.randint(-2, 2)
-            c = rand.randint(0, len(tileSelect) - 1)
-            if (p >= 2):
-                c = 2
-            DataX.append(pygame.image.load("assets/" + tileSelect[c]))
-        DataY.append(DataX)
-        DataX = []
-    return DataY
+def generateTileMap(seed, dx, dy, tileSet):
+    """Generate a tilemap using a seed for repeatable randomization."""
+    random.seed(seed)  # Set seed for consistency
+    tilemap = [[pygame.image.load("assets/" + random.choice(tileSet)) for _ in range(dx)] for _ in range(dy)]
+    return tilemap
 
 
-mapSize = 128
-Map = createMap(mapSize)
+mapSize = 64
+Map = generateTileMap(1024, mapSize, mapSize, ["basalt1.png", "basalt1.png", "arkycite-floor.png", "gold-sand1.png"])
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -64,14 +54,14 @@ while running:
     clock.tick(120)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_a]:
-        velX += speed * gameSpeed * scalarX
-    if keys[pygame.K_d]:
         velX -= speed * gameSpeed * scalarX
+    if keys[pygame.K_d]:
+        velX += speed * gameSpeed * scalarX
 
     if keys[pygame.K_w]:
-        velY += speed * gameSpeed * scalarY
-    if keys[pygame.K_s]:
         velY -= speed * gameSpeed * scalarY
+    if keys[pygame.K_s]:
+        velY += speed * gameSpeed * scalarY
 
     if keys[pygame.K_x]:
         # Quit Pygame

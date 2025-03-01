@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 
@@ -17,7 +19,17 @@ class Window:
         self.defX, self.defY = dx, dy
         self.window = pygame.display
         self.currMode = mode
+
+        # OPENGL CONFIGURATION
+        self.window.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+        self.window.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+        self.window.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+        self.window.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
+        self.window.gl_set_attribute(pygame.GL_ACCELERATED_VISUAL, 1)
+
+        # RETURNS WINDOW
         self.display = self.window.set_mode((width, height), mode, vsync=vsync)
+
 
     def changeResolutionMode(self, dx, dy):
         self.window.set_mode((dx, dy))
@@ -57,37 +69,34 @@ class Graphics:
 
     def displayTable(self, map, dx, dy, screen, camX, camY):
         screen.fill((0, 0, 0))
-        tileSize = 16 * (self.currWin.getDisplay().current_w / self.currWin.defX)
-        IDY = 0
-        for y in range(dy + 1):
-            for x in range(dx + 1):
+        tileSize = int(16 * (self.currWin.getDisplay().current_w / self.currWin.defX))
 
+        screen_width = self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX)
+        screen_height = self.currWin.defY * (self.currWin.getDisplay().current_h / self.currWin.defY)
+        tiles_x = (screen_width // tileSize) + 2  # Extra columns for smooth looping
+        tiles_y = (screen_height // tileSize) + 2  # Extra rows
 
-                # tileRect = tileSprite.get_rect()
-                IDX = x
-                IDY = y
-                tileX = (x * tileSize) + camX
-                tileY = (y * tileSize) + camY
-                screen_width = self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX)
-                screen_height = self.currWin.defY * (self.currWin.getDisplay().current_h / self.currWin.defY)
+        for y in range(int(tiles_y)):
+            for x in range(int(tiles_x)):
+                # **Loop the tile indices infinitely**
+                tile_x_index = int((x + (camX // tileSize)) % dx)
+                tile_y_index = int((y + (camY // tileSize)) % dy)
 
-                # **Wrap Tiles Horizontally**
-                if tileX + tileSize < 0:
-                    tileX += screen_width + tileSize  # Bring tile back in from the right
-                    IDX += dx
-                #elif tileX > screen_width:
-                #    tileX -= screen_width + tileSize  # Wrap to the left
+                seed_x = (x + (camX // tileSize))
+                seed_y = (y + (camY // tileSize))
+                random.seed(seed_x * 1000 + seed_y)  # Unique seed per position
 
-                # **Wrap Tiles Vertically**
-                if tileY + tileSize < 0:
-                    tileY += screen_height + (tileSize + (tileSize // 2))  # Bring tile back in from the bottom
-                    IDY += dy
-                #elif tileY > screen_height:
-                #    tileY -= screen_height + tileSize  # Wrap to the top
-
-                tileSprite = map[IDY][IDX]
+                # **Select a tile from the 2D map randomly based on seed**
+                tile_x_index = random.randint(0, dx - 1)
+                tile_y_index = random.randint(0, dy - 1)
+                tileSprite = map[tile_y_index][tile_x_index]
                 tileSprite = pygame.transform.scale(tileSprite, (tileSize, tileSize))
+
+                # **Position the tile relative to camera movement**
+                tileX = (x * tileSize) - (camX % tileSize)
+                tileY = (y * tileSize) - (camY % tileSize)
+
                 screen.blit(tileSprite, (tileX, tileY))
 
         # Update the display
-        pygame.display.flip()
+        pygame.display.update()  # Efficient refresh
