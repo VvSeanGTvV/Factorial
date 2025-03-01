@@ -46,19 +46,48 @@ class Graphics:
         delta = self.delta()
         return 1 / delta
 
-    def displayTable(self, map, size, screen, camX, camY):
+    def loopX(self, tileX, IDX, camX, tileSize):
+        newX = tileX
+        newIDX = IDX
+        if (tileX < -(tileSize * 3)):
+            newX = (self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX) - (
+                    tileX + tileSize)) + camX
+            newIDX += 40
+        return newX, newIDX
+
+    def displayTable(self, map, dx, dy, screen, camX, camY):
         screen.fill((0, 0, 0))
-        for y in range(size):
-            dataM = map[y]
-            for x in range(size):
-                tileSprite = dataM[x]
-                tileSprite = pygame.transform.scale(tileSprite, (
-                                                        16 * (self.currWin.getDisplay().current_w / self.currWin.defX),
-                                                        16 * (self.currWin.getDisplay().current_h / self.currWin.defY))
-                                                    )
-                tileRect = tileSprite.get_rect()
-                tileWidth, tileHeight = tileRect.width, tileRect.height
-                screen.blit(tileSprite, ((tileWidth * x) + camX, (tileHeight * y) + camY))
+        tileSize = 16 * (self.currWin.getDisplay().current_w / self.currWin.defX)
+        IDY = 0
+        for y in range(dy + 1):
+            for x in range(dx + 1):
+
+
+                # tileRect = tileSprite.get_rect()
+                IDX = x
+                IDY = y
+                tileX = (x * tileSize) + camX
+                tileY = (y * tileSize) + camY
+                screen_width = self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX)
+                screen_height = self.currWin.defY * (self.currWin.getDisplay().current_h / self.currWin.defY)
+
+                # **Wrap Tiles Horizontally**
+                if tileX + tileSize < 0:
+                    tileX += screen_width + tileSize  # Bring tile back in from the right
+                    IDX += dx
+                #elif tileX > screen_width:
+                #    tileX -= screen_width + tileSize  # Wrap to the left
+
+                # **Wrap Tiles Vertically**
+                if tileY + tileSize < 0:
+                    tileY += screen_height + (tileSize + (tileSize // 2))  # Bring tile back in from the bottom
+                    IDY += dy
+                #elif tileY > screen_height:
+                #    tileY -= screen_height + tileSize  # Wrap to the top
+
+                tileSprite = map[IDY][IDX]
+                tileSprite = pygame.transform.scale(tileSprite, (tileSize, tileSize))
+                screen.blit(tileSprite, (tileX, tileY))
 
         # Update the display
         pygame.display.flip()

@@ -41,15 +41,15 @@ def createMap(mapSize):
         for x in range(mapSize):
             p = rand.randint(0, 2) + rand.randint(-2, 2)
             c = rand.randint(0, len(tileSelect) - 1)
-            if (p >= 1):
-                c = 0
+            if (p >= 2):
+                c = 2
             DataX.append(pygame.image.load("assets/" + tileSelect[c]))
         DataY.append(DataX)
         DataX = []
     return DataY
 
 
-mapSize = 64
+mapSize = 128
 Map = createMap(mapSize)
 while running:
     # Handle events
@@ -102,7 +102,7 @@ while running:
     if (velY > 0):
         velY -= velY / maxVel
     # print(velX, velY)
-    Graphic.displayTable(Map, mapSize, Display.display, camX * scalarX, camY * scalarY)
+    Graphic.displayTable(Map, 40, 23, Display.display, camX * scalarX, camY * scalarY)
     # Draw a circle
     # pygame.draw.circle(screen, (255, 255, 255), (width // 2, height // 2), 50)  # White circle in the center
 
