@@ -43,7 +43,7 @@ def createMap(mapSize):
             if (p >= 1):
                 c = rand.randint(0, len(tileSelect) - 1)
 
-            Map.append(pygame.image.load(tileSelect[c]))
+            Map.append(pygame.image.load("assets/" + tileSelect[c]))
 
 
 createMap(16)

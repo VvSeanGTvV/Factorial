@@ -1,0 +1,9 @@
+## BUILD FOLDER
+/build/
+/build/dist/
+
+## IDEA
+.idea/
+
+## PYTHON
+main.spec
