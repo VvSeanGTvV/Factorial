@@ -1,10 +1,8 @@
 import random
-from tkinter import Image
-
 import pygame
 import sys
 
-from Graphics import Graphics, Window
+from Graphics import Graphics, Window, text_sprite
 
 # Initialize Pygame
 pygame.init()
@@ -41,6 +39,8 @@ def generateTileMap(seed, dx, dy, tileSet):
 
 mapSize = 64
 Map = generateTileMap(1024, mapSize, mapSize, ["basalt1.png", "basalt1.png", "arkycite-floor.png", "gold-sand1.png"])
+pygame.font.init()  # you have to call this at the start,
+
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -54,14 +54,14 @@ while running:
     clock.tick(120)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_a]:
-        velX -= speed * gameSpeed * scalarX
-    if keys[pygame.K_d]:
         velX += speed * gameSpeed * scalarX
+    if keys[pygame.K_d]:
+        velX -= speed * gameSpeed * scalarX
 
     if keys[pygame.K_w]:
-        velY -= speed * gameSpeed * scalarY
-    if keys[pygame.K_s]:
         velY += speed * gameSpeed * scalarY
+    if keys[pygame.K_s]:
+        velY -= speed * gameSpeed * scalarY
 
     if keys[pygame.K_x]:
         # Quit Pygame
@@ -70,6 +70,7 @@ while running:
 
     camX += velX
     camY += velY
+
 
     if (velX > maxVel / 10):
         velX -= velX / maxVel
@@ -92,7 +93,12 @@ while running:
     if (velY > 0):
         velY -= velY / maxVel
     # print(velX, velY)
+    Display.display.fill((0, 0, 0))
     Graphic.displayTable(Map, 40, 23, Display.display, camX * scalarX, camY * scalarY)
+
+
+    testText = text_sprite('Arial', 36, f"X: {int(camX // 16)} | Y: {int(camY // 16)}", True, (255, 255, 255))
+    text_sprite.draw_text(testText, Display.display, (30, 30))
     # Draw a circle
     # pygame.draw.circle(screen, (255, 255, 255), (width // 2, height // 2), 50)  # White circle in the center
 
