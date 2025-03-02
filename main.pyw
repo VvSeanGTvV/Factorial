@@ -37,8 +37,8 @@ def generateTileMap(seed, dx, dy, tileSet):
     return tilemap
 
 
-mapSize = 64
-Map = generateTileMap(1024, mapSize, mapSize, ["basalt1.png", "basalt1.png", "arkycite-floor.png", "gold-sand1.png"])
+mapSize = 50
+Map = generateTileMap(256, mapSize, mapSize, ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png"])
 pygame.font.init()  # you have to call this at the start,
 
 while running:
@@ -97,10 +97,9 @@ while running:
     Graphic.displayTable(Map, 40, 23, Display.display, camX * scalarX, camY * scalarY)
 
 
-    testText = text_sprite('Arial', 36, f"X: {int(camX // 16)} | Y: {int(camY // 16)}", True, (255, 255, 255))
+    testText = text_sprite('Arial', 36, f"X: {int(camX // 16)} | Y: {int(camY // 16)} | GAMESPEED: {int(gameSpeed)}", True, (255, 255, 255))
     text_sprite.draw_text(testText, Display.display, (30, 30))
-    # Draw a circle
-    # pygame.draw.circle(screen, (255, 255, 255), (width // 2, height // 2), 50)  # White circle in the center
+    #print(Graphic.getFPS())
 
 # Quit Pygame
 pygame.quit()

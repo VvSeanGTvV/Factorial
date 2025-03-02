@@ -70,8 +70,7 @@ class Graphics:
         return deltaTime
 
     def getFPS(self):
-        delta = self.delta()
-        return 1 / delta
+        return 1 / self.delta()
 
     def loopX(self, tileX, IDX, camX, tileSize):
         newX = tileX
