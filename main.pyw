@@ -38,8 +38,8 @@ def generateTileMap(seed, dx, dy, tileSet):
 
 
 mapSize = 50
-Map = generateTileMap(256, mapSize, mapSize, ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png"])
-pygame.font.init()  # you have to call this at the start,
+Map = generateTileMap(512, mapSize, mapSize, ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png", "basalt1.png"])
+pygame.font.init()
 
 while running:
     # Handle events
