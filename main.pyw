@@ -2,6 +2,8 @@ import random
 import pygame
 import sys
 
+from pygame import Vector2
+
 from Graphics import Graphics, Window, text_sprite
 from World import Player
 
@@ -42,6 +44,10 @@ mapSize = 50
 Map = generateTileMap(512, mapSize, mapSize, ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png", "basalt1.png"])
 pygame.font.init()
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 32, Graphic)
+
+def lerp(a, b, t):
+    return a + (b - a) * t
+
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -73,11 +79,15 @@ while running:
     #camY += velY
 
     windowSX, windowSY = Graphic.getActiveDisplaySize()
+
+    camX = lerp(camX, player.worldx + velX, 0.1)
+    camY = lerp(camY, player.worldy + velY, 0.1)
+
     px, py = player.getPosition()
-    player.updatePositionWorld(player.worldx - velX, player.worldy - velY)
+    player.updatePositionWorld(player.worldx + velX, player.worldy + velY)
     player.updatePosition(player.worldx + (windowSX // 2), player.worldy + (windowSY // 2))
 
-    print(px, py)
+
 
 
     if (velX > maxVel / 10):
@@ -107,7 +117,7 @@ while running:
 
     testText = text_sprite('Arial', 16, f"X: {int(camX // 16)} | Y: {int(camY // 16)}", False, (255, 255, 255), Graphic)
     text_sprite.draw_text(testText, Display.display, (16, 16))
-    player.render(Display.display)
+    player.render(Display.display, -camX, -camY, Vector2(velX, velY))
 
 
     # Update the display
