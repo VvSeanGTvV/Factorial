@@ -38,19 +38,7 @@ class Window:
         return self.window.Info()
 
 
-class text_sprite:
-    curr_font = None
-    curr_text_surface = None
 
-    def __init__(self, system_font, font_size, string: str, antialias: bool, color):
-        self.curr_font = pygame.font.SysFont(system_font, font_size, True)
-        self.curr_text_surface = self.curr_font.render(string, antialias, color)
-        # self.curr_text_surface = self.curr_font.render("", 0, (0, 0, 0))
-
-    def draw_text(self, screen, position):
-        screen.blit(self.curr_text_surface, position)
-
-        pygame.display.update()  # Efficient refresh
 
 
 class Graphics:
@@ -71,6 +59,16 @@ class Graphics:
 
     def getFPS(self):
         return 1 / self.delta()
+
+    def getWindowSize(self):
+        return self.currWin.defX, self.currWin.defY
+
+    def getActiveDisplaySize(self):
+        return self.currWin.getDisplay().current_w, self.currWin.getDisplay().current_h
+
+    def getWindowScale(self):
+        def_x, def_y = self.getWindowSize()
+        return (self.currWin.getDisplay().current_w / def_x), (self.currWin.getDisplay().current_h / def_y)
 
     def loopX(self, tileX, IDX, camX, tileSize):
         newX = tileX
@@ -108,5 +106,16 @@ class Graphics:
 
                 screen.blit(tileSprite, (tileX, tileY))
 
-        # Update the display
-        pygame.display.update()  # Efficient refresh
+class text_sprite:
+    curr_font = None
+    curr_text_surface = None
+
+    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphicHandler: Graphics):
+        self.curr_font = pygame.font.SysFont(system_font, font_size, True)
+        self.curr_text_surface = self.curr_font.render(string, antialias, color)
+        self.graphicHandler = graphicHandler
+
+    def draw_text(self, screen, position):
+        scaleX, scaleY = self.graphicHandler.getWindowScale()
+        self.curr_text_surface = pygame.transform.scale(self.curr_text_surface, (self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
+        screen.blit(self.curr_text_surface, position)
