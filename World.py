@@ -1,6 +1,5 @@
 import math
 import random
-
 import pygame
 from pygame import Surface, Vector2
 
@@ -11,30 +10,33 @@ class Player:
     worldx = 0
     worldy = 0
 
-    def __init__(self, x, y, sprite: Surface, size, grahpicHandler: Graphics):
+    def __init__(self, x, y, sprite: Surface, size, graphic_handler: Graphics):
         self.x = x
         self.y = y
         self.sprite = sprite
-        self.grahpicHandler = grahpicHandler
+        self.graphic_handler = graphic_handler
         self.size = size
 
-    def updatePosition(self, x, y):
+    def update_position(self, x, y):
         self.x = x
         self.y = y
 
-    def updatePositionWorld(self, x, y):
+    def update_position_world(self, x, y):
         self.worldx = x
         self.worldy = y
 
-    def getPosition(self):
+        windowSX, windowSY = self.graphic_handler.getActiveDisplaySize()
+        self.update_position(self.worldx + (windowSX // 2), self.worldy + (windowSY // 2))
+
+    def get_position(self):
         return self.worldx, self.worldy
 
     def render(self, screen, camX, camY, velocity: Vector2):
         self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (self.grahpicHandler.curr_win.getDisplay().current_w / self.grahpicHandler.curr_win.defX)),
-            int(self.size * (self.grahpicHandler.curr_win.getDisplay().current_h / self.grahpicHandler.curr_win.defY))))
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
-        ss_sprite = self.grahpicHandler.supersample_sprite(self.sprite)
+        ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
         if velocity.x != 0 or velocity.y != 0:
             angle = math.degrees(math.atan2(-velocity.y, velocity.x)) + 90
             rotated_sprite = pygame.transform.rotate(ss_sprite, angle)
@@ -54,11 +56,11 @@ class Map:
         self.curr_win = Window
         self.seed = Seed
 
-    def preloadTiles(self, tile_set):
+    def preload_tiles(self, tile_set):
         """Preloads tile images and stores them in a 1D list."""
         return [pygame.image.load("assets/" + tile) for tile in tile_set]
 
-    def getTile(self, x, y, tile_set):
+    def get_tile(self, x, y, tile_set):
         """Deterministically selects a tile based on coordinates using a seed."""
         random.seed(x * self.seed + y)  # Unique seed for each (x, y)
         return random.choice(tile_set)
@@ -107,7 +109,7 @@ class Map:
         for y in range(start_tile_y, end_tile_y):
             for x in range(start_tile_x, end_tile_x):
                 # Generate or retrieve the tile using the seed-based system
-                tile_sprite = self.getTile(x, y, tile_set)  # Assuming getTile uses x, y and seed
+                tile_sprite = self.get_tile(x, y, tile_set)  # Assuming getTile uses x, y and seed
                 tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
 
                 # Scale the tile if it's not already cached
@@ -135,7 +137,7 @@ class Map:
         self.scaled_surface.blits(batch_tiles)
 
         # Upscale the scaled surface to the display resolution
-        scaled_to_display = pygame.transform.scale(self.scaled_surface, (self.curr_win.getDisplay().current_w, self.curr_win.getDisplay().current_h))
+        scaled_to_display = pygame.transform.scale(self.scaled_surface, (self.curr_win.get_display().current_w, self.curr_win.get_display().current_h))
 
         # Render the upscaled surface to the display
         self.curr_win.display.blit(scaled_to_display, (0, 0))
@@ -144,8 +146,8 @@ class Camera:
     def __init__(self, x, y):
         self.pos = Vector2(x, y)
 
-    def getWorldPosition(self, tileSize):
+    def get_world_position(self, tileSize):
         return Vector2(self.pos.x // tileSize, self.pos.y // tileSize)
 
-    def updatePosition(self, x, y):
+    def update_position(self, x, y):
         self.pos = Vector2(x, y)

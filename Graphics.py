@@ -1,7 +1,4 @@
-import random
-
 import pygame
-from pygame import Vector2
 
 def getDisplay():
     return pygame.display.Info()
@@ -29,7 +26,7 @@ class Window:
     def changeResolutionMode(self, dx, dy):
         self.window.set_mode((dx, dy))
 
-    def getDisplay(self):
+    def get_display(self):
         return self.window.Info()
 
 
@@ -55,11 +52,11 @@ class Graphics:
         return self.curr_win.defX, self.curr_win.defY
 
     def getActiveDisplaySize(self):
-        return self.curr_win.getDisplay().current_w, self.curr_win.getDisplay().current_h
+        return self.curr_win.get_display().current_w, self.curr_win.get_display().current_h
 
     def getWindowScale(self):
         def_x, def_y = self.getWindowSize()
-        return (self.curr_win.getDisplay().current_w / def_x), (self.curr_win.getDisplay().current_h / def_y)
+        return (self.curr_win.get_display().current_w / def_x), (self.curr_win.get_display().current_h / def_y)
 
     def supersample_sprite(self, tile_sprite):
         # Render the tile at a higher resolution
