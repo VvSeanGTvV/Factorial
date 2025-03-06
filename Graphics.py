@@ -35,16 +35,16 @@ class Window:
 
 class Graphics:
 
-    def __init__(self, newWindow: Window):
-        self.currWin = newWindow
-        self.getTicksLastFrame = 0
+    def __init__(self, window: Window, super_sample):
+        self.curr_win = window
         self.clock = pygame.time.Clock()
+        self.super_sample = super_sample
 
     # DELTA SYSTEM
     def delta(self):
         # Calculate delta time
         pygame.time.Clock()
-        delta_time = self.clock.tick(self.currWin.lockFPS) / 1000  # Convert milliseconds to seconds
+        delta_time = self.clock.tick(self.curr_win.lockFPS) / 1000  # Convert milliseconds to seconds
         delta_time = min(delta_time, 0.1)
         return delta_time
 
@@ -52,18 +52,18 @@ class Graphics:
         return 1 / self.delta()
 
     def getWindowSize(self):
-        return self.currWin.defX, self.currWin.defY
+        return self.curr_win.defX, self.curr_win.defY
 
     def getActiveDisplaySize(self):
-        return self.currWin.getDisplay().current_w, self.currWin.getDisplay().current_h
+        return self.curr_win.getDisplay().current_w, self.curr_win.getDisplay().current_h
 
     def getWindowScale(self):
         def_x, def_y = self.getWindowSize()
-        return (self.currWin.getDisplay().current_w / def_x), (self.currWin.getDisplay().current_h / def_y)
+        return (self.curr_win.getDisplay().current_w / def_x), (self.curr_win.getDisplay().current_h / def_y)
 
-    def supersample_tile(self, tile_sprite, scale_factor):
+    def supersample_sprite(self, tile_sprite):
         # Render the tile at a higher resolution
-        larger_size = (int(tile_sprite.get_width() * scale_factor), int(tile_sprite.get_height() * scale_factor))
+        larger_size = (int(tile_sprite.get_width() * self.super_sample), int(tile_sprite.get_height() * self.super_sample))
         larger_surface = pygame.transform.scale(tile_sprite, larger_size)
 
         # Downscale the tile to the original size with smooth scaling

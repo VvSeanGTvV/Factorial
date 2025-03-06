@@ -31,10 +31,10 @@ class Player:
 
     def render(self, screen, camX, camY, velocity: Vector2):
         self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (self.grahpicHandler.currWin.getDisplay().current_w / self.grahpicHandler.currWin.defX)),
-            int(self.size * (self.grahpicHandler.currWin.getDisplay().current_h / self.grahpicHandler.currWin.defY))))
+            int(self.size * (self.grahpicHandler.curr_win.getDisplay().current_w / self.grahpicHandler.curr_win.defX)),
+            int(self.size * (self.grahpicHandler.curr_win.getDisplay().current_h / self.grahpicHandler.curr_win.defY))))
 
-        ss_sprite = self.grahpicHandler.supersample_tile(self.sprite, 2)  # Supersample at 2x resolution
+        ss_sprite = self.grahpicHandler.supersample_sprite(self.sprite)
         if velocity.x != 0 or velocity.y != 0:
             angle = math.degrees(math.atan2(-velocity.y, velocity.x)) + 90
             rotated_sprite = pygame.transform.rotate(ss_sprite, angle)
@@ -48,10 +48,10 @@ class Player:
 
 
 class Map:
-    def __init__(self, Window, Seed, grahpicHandler):
+    def __init__(self, Window, Seed, graphic_handler):
         """Creates a Map"""
-        self.grahpicHandler = grahpicHandler
-        self.currWin = Window
+        self.graphic_handler = graphic_handler
+        self.curr_win = Window
         self.seed = Seed
 
     def preloadTiles(self, tile_set):
@@ -63,11 +63,10 @@ class Map:
         random.seed(x * self.seed + y)  # Unique seed for each (x, y)
         return random.choice(tile_set)
 
-    def render(self, tile_set, camX, camY):
+    def render(self, tile_set, camX, camY, scale_factor):
         # Define the base resolution (logical resolution)
-        base_width = self.currWin.defX
-        base_height = self.currWin.defY
-        scale_factor = 1
+        base_width = self.curr_win.defX
+        base_height = self.curr_win.defY
 
         # Calculate the scaled resolution
         scaled_width = int(base_width * scale_factor)
@@ -109,7 +108,7 @@ class Map:
             for x in range(start_tile_x, end_tile_x):
                 # Generate or retrieve the tile using the seed-based system
                 tile_sprite = self.getTile(x, y, tile_set)  # Assuming getTile uses x, y and seed
-                tile_sprite = self.grahpicHandler.supersample_tile(tile_sprite, 2)  # Supersample at 2x resolution
+                tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
 
                 # Scale the tile if it's not already cached
                 if (x, y) not in tile_cache:
@@ -136,10 +135,10 @@ class Map:
         self.scaled_surface.blits(batch_tiles)
 
         # Upscale the scaled surface to the display resolution
-        scaled_to_display = pygame.transform.scale(self.scaled_surface, (self.currWin.getDisplay().current_w, self.currWin.getDisplay().current_h))
+        scaled_to_display = pygame.transform.scale(self.scaled_surface, (self.curr_win.getDisplay().current_w, self.curr_win.getDisplay().current_h))
 
         # Render the upscaled surface to the display
-        self.currWin.display.blit(scaled_to_display, (0, 0))
+        self.curr_win.display.blit(scaled_to_display, (0, 0))
 
 class Camera:
     def __init__(self, x, y):
