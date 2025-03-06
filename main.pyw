@@ -5,13 +5,13 @@ import sys
 from pygame import Vector2
 
 from Graphics import Graphics, Window, text_sprite
-from World import Player
+from World import Player, Camera, Map
 
 # Initialize Pygame
 pygame.init()
 
 # Set window dimensions
-Display = Window(640, 360, 640, 360, pygame.RESIZABLE, 0)
+Display = Window(640, 360, 1920, 1080, pygame.FULLSCREEN, 120, 0)
 Graphic = Graphics(Display)
 
 # Set the frame rate
@@ -22,31 +22,21 @@ pygame.display.set_caption("Factorial [DEVELOPMENT]")
 
 # Game loop
 running = True
-camX = 0
-camY = 0
-
-getTicksLastFrame = 0
 
 velX = 0
 velY = 0
-speed = 0.1
+speed = 10
 maxVel = 50
-
-
-def generateTileMap(seed, dx, dy, tileSet):
-    """Generate a tilemap using a seed for repeatable randomization."""
-    random.seed(seed)  # Set seed for consistency
-    tilemap = [[pygame.image.load("assets/" + random.choice(tileSet)) for _ in range(dx)] for _ in range(dy)]
-    return tilemap
-
-
-mapSize = 50
-Map = generateTileMap(512, mapSize, mapSize, ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png", "basalt1.png"])
 pygame.font.init()
-player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 32, Graphic)
+
+player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, Graphic)
+camera = Camera(0, 0)
+world = Map(Display, 512, Graphic)
+
 
 def lerp(a, b, t):
     return a + (b - a) * t
+
 
 while running:
     # Handle events
@@ -55,40 +45,38 @@ while running:
             running = False
 
     # HANDLER FPS
-    gameSpeed = 120 / Graphic.getFPS()
+    gameSpeed = Graphic.delta()
     scalarX, scalarY = Graphic.getWindowScale()
 
-    clock.tick(120)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_a]:
-        velX += speed * gameSpeed * scalarX
+        velX += speed * gameSpeed
     if keys[pygame.K_d]:
-        velX -= speed * gameSpeed * scalarX
+        velX -= speed * gameSpeed
 
     if keys[pygame.K_w]:
-        velY += speed * gameSpeed * scalarY
+        velY += speed * gameSpeed
     if keys[pygame.K_s]:
-        velY -= speed * gameSpeed * scalarY
+        velY -= speed * gameSpeed
 
     if keys[pygame.K_x]:
         # Quit Pygame
         pygame.quit()
         sys.exit()
 
-    #camX += velX
-    #camY += velY
+    if keys[pygame.K_m]:
+        player.updatePositionWorld(-sys.maxsize // 10, -sys.maxsize // 10)
 
     windowSX, windowSY = Graphic.getActiveDisplaySize()
 
-    camX = lerp(camX, player.worldx + velX, 0.1)
-    camY = lerp(camY, player.worldy + velY, 0.1)
+    camera.updatePosition(
+        lerp(camera.pos.x, -player.worldx, speed * gameSpeed / scalarX),
+        lerp(camera.pos.y, -player.worldy, speed * gameSpeed / scalarY)
+    )
 
     px, py = player.getPosition()
-    player.updatePositionWorld(player.worldx + velX, player.worldy + velY)
+    player.updatePositionWorld(player.worldx - velX, player.worldy - velY)
     player.updatePosition(player.worldx + (windowSX // 2), player.worldy + (windowSY // 2))
-
-
-
 
     if (velX > maxVel / 10):
         velX -= velX / maxVel
@@ -112,17 +100,19 @@ while running:
         velY -= velY / maxVel
     # print(velX, velY)
     Display.display.fill((0, 0, 0))
-    Graphic.displayTable(Map, 40, 23, Display.display, camX * scalarX, camY * scalarY)
+    world.render(
+        world.preloadTiles(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png", "basalt1.png"]),
+        camera.pos.x * scalarX, camera.pos.y * scalarY)
 
-
-    testText = text_sprite('Arial', 16, f"X: {int(camX // 16)} | Y: {int(camY // 16)}", False, (255, 255, 255), Graphic)
+    testText = text_sprite('Arial', 16,
+                           f"X: {int(camera.getWorldPosition(16).x)} | Y: {int(camera.getWorldPosition(16).y)}", False,
+                           (255, 255, 255), Graphic)
     text_sprite.draw_text(testText, Display.display, (16, 16))
-    player.render(Display.display, -camX, -camY, Vector2(velX, velY))
-
+    player.render(Display.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
     # Update the display
     pygame.display.update()  # Efficient refresh
-    #print(Graphic.getFPS())
+    # print(Graphic.getFPS())
 
 # Quit Pygame
 pygame.quit()

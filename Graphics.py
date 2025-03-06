@@ -3,25 +3,20 @@ import random
 import pygame
 from pygame import Vector2
 
-
 def getDisplay():
     return pygame.display.Info()
 
 
 class Window:
-    defX, defY = 0, 0
-    display = None
-    window = None
-
-    currMode = None
-
-    def __init__(self, dx, dy, vx, vy, mode, vsync):
+    def __init__(self, dx, dy, vx, vy, mode, fpsLock, vsync):
         width, height = vx, vy
         self.defX, self.defY = dx, dy
         self.window = pygame.display
         self.currMode = mode
+        self.lockFPS = fpsLock
 
         # OPENGL CONFIGURATION
+        flags = pygame.HWSURFACE | pygame.DOUBLEBUF | mode
         self.window.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
         self.window.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
         self.window.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
@@ -29,7 +24,7 @@ class Window:
         self.window.gl_set_attribute(pygame.GL_ACCELERATED_VISUAL, 1)
 
         # RETURNS WINDOW
-        self.display = self.window.set_mode((width, height), mode, vsync=vsync)
+        self.display = self.window.set_mode((width, height), flags, mode, vsync=vsync)
 
     def changeResolutionMode(self, dx, dy):
         self.window.set_mode((dx, dy))
@@ -38,24 +33,20 @@ class Window:
         return self.window.Info()
 
 
-
-
-
 class Graphics:
-    getTicksLastFrame = 0
-    currWin = None
 
     def __init__(self, newWindow: Window):
         self.currWin = newWindow
         self.getTicksLastFrame = 0
+        self.clock = pygame.time.Clock()
 
     # DELTA SYSTEM
     def delta(self):
-        t = pygame.time.get_ticks()
-        # deltaTime in seconds.
-        deltaTime = (t - self.getTicksLastFrame) / 1000.0
-        self.getTicksLastFrame = t
-        return deltaTime
+        # Calculate delta time
+        pygame.time.Clock()
+        delta_time = self.clock.tick(self.currWin.lockFPS) / 1000  # Convert milliseconds to seconds
+        delta_time = min(delta_time, 0.1)
+        return delta_time
 
     def getFPS(self):
         return 1 / self.delta()
@@ -70,41 +61,13 @@ class Graphics:
         def_x, def_y = self.getWindowSize()
         return (self.currWin.getDisplay().current_w / def_x), (self.currWin.getDisplay().current_h / def_y)
 
-    def loopX(self, tileX, IDX, camX, tileSize):
-        newX = tileX
-        newIDX = IDX
-        if (tileX < -(tileSize * 3)):
-            newX = (self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX) - (
-                    tileX + tileSize)) + camX
-            newIDX += 40
-        return newX, newIDX
+    def supersample_tile(self, tile_sprite, scale_factor):
+        # Render the tile at a higher resolution
+        larger_size = (int(tile_sprite.get_width() * scale_factor), int(tile_sprite.get_height() * scale_factor))
+        larger_surface = pygame.transform.scale(tile_sprite, larger_size)
 
-    def displayTable(self, map, dx, dy, screen, camX, camY):
-
-        tile_size = int(16 * (self.currWin.getDisplay().current_w / self.currWin.defX))
-
-        screen_width = self.currWin.defX * (self.currWin.getDisplay().current_w / self.currWin.defX)
-        screen_height = self.currWin.defY * (self.currWin.getDisplay().current_h / self.currWin.defY)
-        tiles_x = (screen_width // tile_size) + 2  # Extra columns for smooth looping
-        tiles_y = (screen_height // tile_size) + 2  # Extra rows
-
-        for y in range(int(tiles_y)):
-            for x in range(int(tiles_x)):
-                seed_x = (x + (-camX // tile_size))
-                seed_y = (y + (-camY // tile_size))
-                random.seed(seed_x * 1000 + seed_y)  # Unique seed per position
-
-                # **Select a tile from the 2D map randomly based on seed**
-                tile_x_index = random.randint(0, dx + 1)
-                tile_y_index = random.randint(0, dy + 1)
-                tileSprite = map[tile_y_index][tile_x_index]
-                tileSprite = pygame.transform.scale(tileSprite, (tile_size, tile_size))
-
-                # **Position the tile relative to camera movement**
-                tileX = (x * tile_size) - (-camX % tile_size)
-                tileY = (y * tile_size) - (-camY % tile_size)
-
-                screen.blit(tileSprite, (tileX, tileY))
+        # Downscale the tile to the original size with smooth scaling
+        return pygame.transform.smoothscale(larger_surface, (tile_sprite.get_width(), tile_sprite.get_height()))
 
 class text_sprite:
     curr_font = None
