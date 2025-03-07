@@ -40,7 +40,7 @@ class Graphics:
         self.super_sample = super_sample
 
         self.last_fps_update_time = time.time()  # Track the last time FPS was updated
-        self.fps_update_interval = 1.0  # Update FPS every 1 second
+        self.fps_update_interval = 0.5  # Update FPS every 1 second
         self.current_fps = 0  # Store the current FPS value
 
     # DELTA SYSTEM

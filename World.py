@@ -69,7 +69,7 @@ class Map:
     def get_tile(self, x, y, tile_set):
         """Selects a tile based on noise values generated on-the-fly."""
         # Generate a noise value for the (x, y) coordinate
-        noise_scale = 0.1  # Adjust this to control the "zoom" of the noise
+        noise_scale = 0.01  # Adjust this to control the "zoom" of the noise
         noise_value = self.noise_generator.noise2(x * noise_scale, y * noise_scale)
 
         # Normalize the noise value to the range [0, 1]
