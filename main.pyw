@@ -4,7 +4,7 @@ import sys
 from pygame import Vector2
 
 import Mathf
-from Graphics import Graphics, Window, text_sprite
+from Graphics import Graphics, Window, TextSprite
 from World import Player, Camera, Map
 
 # Initialize Pygame
@@ -96,12 +96,12 @@ while running:
         tiles,
         camera.pos.x * scalarX, camera.pos.y * scalarY, 1)
 
-    testText = text_sprite('Arial', 16,
+    testText = TextSprite('Arial', 16,
                            f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)}", False,
-                           (255, 255, 255), graphic_handler
-                           )
+                          (255, 255, 255), graphic_handler
+                          )
 
-    text_sprite.draw_text(testText, window.display, (16, 16))
+    TextSprite.draw_text(testText, window.display, (16, 16))
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
     # Update the display

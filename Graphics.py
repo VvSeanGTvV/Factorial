@@ -1,5 +1,6 @@
 import pygame
 
+
 def getDisplay():
     return pygame.display.Info()
 
@@ -60,22 +61,23 @@ class Graphics:
 
     def supersample_sprite(self, tile_sprite):
         # Render the tile at a higher resolution
-        larger_size = (int(tile_sprite.get_width() * self.super_sample), int(tile_sprite.get_height() * self.super_sample))
+        larger_size = (
+        int(tile_sprite.get_width() * self.super_sample), int(tile_sprite.get_height() * self.super_sample))
         larger_surface = pygame.transform.scale(tile_sprite, larger_size)
 
         # Downscale the tile to the original size with smooth scaling
         return pygame.transform.smoothscale(larger_surface, (tile_sprite.get_width(), tile_sprite.get_height()))
 
-class text_sprite:
-    curr_font = None
-    curr_text_surface = None
 
-    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphicHandler: Graphics):
+class TextSprite:
+
+    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphic_handler: Graphics):
         self.curr_font = pygame.font.SysFont(system_font, font_size, True)
         self.curr_text_surface = self.curr_font.render(string, antialias, color)
-        self.graphicHandler = graphicHandler
+        self.graphic_handler = graphic_handler
 
     def draw_text(self, screen, position):
-        scaleX, scaleY = self.graphicHandler.getWindowScale()
-        self.curr_text_surface = pygame.transform.scale(self.curr_text_surface, (self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
+        scaleX, scaleY = self.graphic_handler.getWindowScale()
+        self.curr_text_surface = pygame.transform.scale(self.curr_text_surface, (
+        self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
         screen.blit(self.curr_text_surface, position)
