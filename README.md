@@ -2,6 +2,8 @@
 Created for APCS Create EXAM for APRIL
 
  Inspired by Mindustry, and Factorio
+> [!NOTE]
+> Powered by Python 3.13.x | Numpy | Opensimplex | Pygame 
 
 ## BUILDING
 > [!NOTE]

@@ -1,5 +1,7 @@
 import math
-import random
+
+import numpy as np
+import opensimplex
 import pygame
 from pygame import Surface, Vector2
 
@@ -50,20 +52,34 @@ class Player:
 
 
 class Map:
-    def __init__(self, Window, Seed, graphic_handler):
+    def __init__(self, window, seed, graphic_handler):
         """Creates a Map"""
         self.graphic_handler = graphic_handler
-        self.curr_win = Window
-        self.seed = Seed
+        self.curr_win = window
+        self.seed = seed  # Store the seed for deterministic generation
+        self.noise_generator = opensimplex.OpenSimplex(seed)  # Initialize Simplex noise generator
 
     def preload_tiles(self, tile_set):
         """Preloads tile images and stores them in a 1D list."""
         return [pygame.image.load("assets/" + tile) for tile in tile_set]
 
     def get_tile(self, x, y, tile_set):
-        """Deterministically selects a tile based on coordinates using a seed."""
-        random.seed(x * self.seed + y)  # Unique seed for each (x, y)
-        return random.choice(tile_set)
+        """
+        Selects a tile based on Simplex noise values.
+        Noise values are mapped to the entire tile_set.
+        """
+        # Generate a noise value for the (x, y) coordinate
+        noise_scale = 0.05  # Adjust this to control the "zoom" of the noise
+        noise_value = self.noise_generator.noise2(x * noise_scale, y * noise_scale)
+
+        # Normalize the noise value to the range [0, 1]
+        normalized_noise = (noise_value + 1) / 2  # Convert [-1, 1] to [0, 1]
+
+        # Map the normalized noise value to a tile index
+        tile_index = int(normalized_noise * len(tile_set))  # Scale to tile_set length
+        tile_index = max(0, min(tile_index, len(tile_set) - 1))  # Clamp to valid range
+
+        return tile_set[tile_index]  # Return the selected tile
 
     def render(self, tile_set, camX, camY, scale_factor):
         # Define the base resolution (logical resolution)

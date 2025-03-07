@@ -3,7 +3,7 @@ build/
 dist/
 
 ## IDEA
-.idea/
+.idea\
 
 ## PYTHON
 main.spec

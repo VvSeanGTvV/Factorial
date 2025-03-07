@@ -11,7 +11,7 @@ from World import Player, Camera, Map
 pygame.init()
 
 # Set window dimensions
-window = Window(640, 360, 1280, 720, pygame.FULLSCREEN, 60, 0)
+window = Window(640, 360, 1920, 1080, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Graphics(window, 1)
 
 # Set window title
@@ -28,9 +28,10 @@ pygame.font.init()
 
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 512, graphic_handler)
+world = Map(window, 128, graphic_handler)
 
 
+tiles = world.preload_tiles(["grass.png", "grass.png", "gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "deep-water.png", "basalt1.png"])
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -58,7 +59,7 @@ while running:
         sys.exit()
 
     if keys[pygame.K_m]:
-        player.update_position_world(-sys.maxsize // 10, -sys.maxsize // 10)
+        player.update_position_world(-sys.maxsize // 100, -sys.maxsize // 100)
 
     camera.update_position(
         Mathf.lerp(camera.pos.x, -player.worldx, speed * gameSpeed / scalarX),
@@ -92,7 +93,7 @@ while running:
     # print(velX, velY)
     window.display.fill((0, 0, 0))
     world.render(
-        world.preload_tiles(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "silver-plating.png", "basalt1.png"]),
+        tiles,
         camera.pos.x * scalarX, camera.pos.y * scalarY, 1)
 
     testText = text_sprite('Arial', 16,
