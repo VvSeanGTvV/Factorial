@@ -2,6 +2,7 @@ import pygame
 import sys
 
 from pygame import Vector2
+from screeninfo import get_monitors
 
 import Mathf
 from Graphics import Graphics, Window, TextSprite
@@ -11,7 +12,9 @@ from World import Player, Camera, Map
 pygame.init()
 
 # Set window dimensions
-window = Window(640, 360, 1920, 1080, pygame.FULLSCREEN, 60, 0)
+monitors = get_monitors()
+monitor_main = monitors[0]
+window = Window(640, 360, monitor_main.width, monitor_main.height, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Graphics(window, 1)
 
 # Set window title
