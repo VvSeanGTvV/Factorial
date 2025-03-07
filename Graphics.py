@@ -1,4 +1,5 @@
 import pygame
+import time
 
 
 def getDisplay():
@@ -38,6 +39,10 @@ class Graphics:
         self.clock = pygame.time.Clock()
         self.super_sample = super_sample
 
+        self.last_fps_update_time = time.time()  # Track the last time FPS was updated
+        self.fps_update_interval = 1.0  # Update FPS every 1 second
+        self.current_fps = 0  # Store the current FPS value
+
     # DELTA SYSTEM
     def delta(self):
         # Calculate delta time
@@ -47,7 +52,16 @@ class Graphics:
         return delta_time
 
     def getFPS(self):
-        return 1 / self.delta()
+        """Calculate and return the FPS, updating at a fixed interval."""
+        current_time = time.time()
+        time_since_last_update = current_time - self.last_fps_update_time
+
+        # Update FPS only if the interval has passed
+        if time_since_last_update >= self.fps_update_interval:
+            self.current_fps = 1 / self.delta()  # Recalculate FPS
+            self.last_fps_update_time = current_time  # Reset the timer
+
+        return self.current_fps
 
     def getWindowSize(self):
         return self.curr_win.defX, self.curr_win.defY

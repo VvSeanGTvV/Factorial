@@ -52,24 +52,24 @@ class Player:
 
 
 class Map:
-    def __init__(self, window, seed, graphic_handler):
+    def __init__(self, window, seed, graphic_handler, chunk_size):
         """Creates a Map"""
         self.graphic_handler = graphic_handler
         self.curr_win = window
         self.seed = seed  # Store the seed for deterministic generation
         self.noise_generator = opensimplex.OpenSimplex(seed)  # Initialize Simplex noise generator
+        self.tile_cache = {}  # Cache for scaled and supersampled tiles
+        self.loaded_chunks = {}  # Dictionary to store loaded chunks
+        self.chunk_size = chunk_size  # Size of each chunk (e.g., 16x16 tiles)
 
     def preload_tiles(self, tile_set):
         """Preloads tile images and stores them in a 1D list."""
         return [pygame.image.load("assets/" + tile) for tile in tile_set]
 
     def get_tile(self, x, y, tile_set):
-        """
-        Selects a tile based on Simplex noise values.
-        Noise values are mapped to the entire tile_set.
-        """
+        """Selects a tile based on noise values generated on-the-fly."""
         # Generate a noise value for the (x, y) coordinate
-        noise_scale = 0.05  # Adjust this to control the "zoom" of the noise
+        noise_scale = 0.1  # Adjust this to control the "zoom" of the noise
         noise_value = self.noise_generator.noise2(x * noise_scale, y * noise_scale)
 
         # Normalize the noise value to the range [0, 1]
@@ -81,6 +81,22 @@ class Map:
 
         return tile_set[tile_index]  # Return the selected tile
 
+    def load_chunk(self, chunk_x, chunk_y, tile_set, tile_size):
+        """Loads a chunk of tiles and caches them."""
+        chunk_tiles = []
+        for y in range(chunk_y * self.chunk_size, (chunk_y + 1) * self.chunk_size):
+            for x in range(chunk_x * self.chunk_size, (chunk_x + 1) * self.chunk_size):
+                tile_sprite = self.get_tile(x, y, tile_set)
+                tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
+                tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
+                chunk_tiles.append(tile_sprite)
+        self.loaded_chunks[(chunk_x, chunk_y)] = chunk_tiles
+
+    def unload_chunk(self, chunk_x, chunk_y):
+        """Unloads a chunk of tiles to free up memory."""
+        if (chunk_x, chunk_y) in self.loaded_chunks:
+            del self.loaded_chunks[(chunk_x, chunk_y)]
+
     def render(self, tile_set, camX, camY, scale_factor):
         # Define the base resolution (logical resolution)
         base_width = self.curr_win.defX
@@ -90,12 +106,13 @@ class Map:
         scaled_width = int(base_width * scale_factor)
         scaled_height = int(base_height * scale_factor)
 
-        # Create a surface for rendering at the scaled resolution
+        # Create or reuse the scaled surface
         if not hasattr(self, 'scaled_surface'):
             self.scaled_surface = pygame.Surface((scaled_width, scaled_height))
 
         # Precompute tile size and screen dimensions for the scaled resolution
-        tile_size = int(16 * scale_factor)  # Scale the tile size
+        base_tile_size = 16  # Base size of a tile in pixels
+        tile_size = int(base_tile_size * scale_factor)  # Scale the tile size
         screen_width = scaled_width
         screen_height = scaled_height
 
@@ -105,46 +122,52 @@ class Map:
         camera_right = -camX + base_width  # Use base width for camera calculations
         camera_bottom = -camY + base_height  # Use base height for camera calculations
 
-        # Calculate the range of tiles that are visible within the camera's view
-        start_tile_x = int(camera_left // tile_size)  # Starting tile X index
-        start_tile_y = int(camera_top // tile_size)   # Starting tile Y index
-        end_tile_x = int(camera_right // tile_size) + 1  # Ending tile X index
-        end_tile_y = int(camera_bottom // tile_size) + 1  # Ending tile Y index
+        # Calculate the range of chunks that are visible within the camera's view
+        start_chunk_x = int(camera_left // (self.chunk_size * base_tile_size))
+        start_chunk_y = int(camera_top // (self.chunk_size * base_tile_size))
+        end_chunk_x = int(camera_right // (self.chunk_size * base_tile_size)) + 1
+        end_chunk_y = int(camera_bottom // (self.chunk_size * base_tile_size)) + 1
+
+        # Load newly visible chunks and unload chunks that are no longer visible
+        for chunk_x in range(start_chunk_x, end_chunk_x):
+            for chunk_y in range(start_chunk_y, end_chunk_y):
+                if (chunk_x, chunk_y) not in self.loaded_chunks:
+                    self.load_chunk(chunk_x, chunk_y, tile_set, tile_size)
+
+        # Unload chunks that are no longer visible
+        chunks_to_unload = []
+        for chunk_coords in self.loaded_chunks:
+            if not (start_chunk_x <= chunk_coords[0] < end_chunk_x and
+                    start_chunk_y <= chunk_coords[1] < end_chunk_y):
+                chunks_to_unload.append(chunk_coords)
+        for chunk_coords in chunks_to_unload:
+            self.unload_chunk(*chunk_coords)
 
         # Precompute camera offsets for smooth scrolling
         camX_offset = -camX % tile_size  # Fractional offset within a tile
         camY_offset = -camY % tile_size  # Fractional offset within a tile
 
-        # Cache scaled tiles to avoid redundant transformations
-        tile_cache = {}
-
         # List to store tiles and their positions for batch rendering
         batch_tiles = []
 
         # Collect visible tiles for batch rendering
-        for y in range(start_tile_y, end_tile_y):
-            for x in range(start_tile_x, end_tile_x):
-                # Generate or retrieve the tile using the seed-based system
-                tile_sprite = self.get_tile(x, y, tile_set)  # Assuming getTile uses x, y and seed
-                tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
+        for chunk_coords in self.loaded_chunks:
+            chunk_x, chunk_y = chunk_coords
+            for y in range(chunk_y * self.chunk_size, (chunk_y + 1) * self.chunk_size):
+                for x in range(chunk_x * self.chunk_size, (chunk_x + 1) * self.chunk_size):
+                    # Calculate the position of the tile on the screen
+                    render_x = (x * tile_size - -camX) * scale_factor
+                    render_y = (y * tile_size - -camY) * scale_factor
 
-                # Scale the tile if it's not already cached
-                if (x, y) not in tile_cache:
-                    tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
-                    tile_cache[(x, y)] = tile_sprite
-                else:
-                    tile_sprite = tile_cache[(x, y)]
-
-                # Calculate the position of the tile on the screen
-                render_x = (x - start_tile_x) * tile_size - camX_offset
-                render_y = (y - start_tile_y) * tile_size - camY_offset
-
-                # Add the tile and its position to the batch list
-                if (
-                        render_x + tile_size > 0 and render_x < screen_width and
-                        render_y + tile_size > 0 and render_y < screen_height
-                ):
-                    batch_tiles.append((tile_sprite, (render_x, render_y)))
+                    # Add the tile and its position to the batch list
+                    if (
+                            render_x + tile_size > 0 and render_x < screen_width and
+                            render_y + tile_size > 0 and render_y < screen_height
+                    ):
+                        tile_sprite = self.loaded_chunks[chunk_coords][
+                            (y - chunk_y * self.chunk_size) * self.chunk_size + (x - chunk_x * self.chunk_size)
+                            ]
+                        batch_tiles.append((tile_sprite, (render_x, render_y)))
 
         # Clear the scaled surface
         self.scaled_surface.fill((0, 0, 0))  # Fill with background color

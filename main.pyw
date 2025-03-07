@@ -2,7 +2,7 @@ import pygame
 import sys
 
 from pygame import Vector2
-from screeninfo import get_monitors
+import ctypes
 
 import Mathf
 from Graphics import Graphics, Window, TextSprite
@@ -12,13 +12,14 @@ from World import Player, Camera, Map
 pygame.init()
 
 # Set window dimensions
-monitors = get_monitors()
-monitor_main = monitors[0]
-window = Window(640, 360, monitor_main.width, monitor_main.height, pygame.FULLSCREEN, 60, 0)
+user32 = ctypes.windll.user32 # Get win32
+user32.SetProcessDPIAware() # Calculate DPI (used for high DPI display)
+screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
+window = Window(640, 360, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Graphics(window, 1)
 
 # Set window title
-pygame.display.set_caption("Factorial [DEVELOPMENT]")
+pygame.display.set_caption("Factorial [DEV-01]")
 
 # Game loop
 running = True
@@ -31,7 +32,7 @@ pygame.font.init()
 
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 128, graphic_handler)
+world = Map(window, 128, graphic_handler, 4)
 
 
 tiles = world.preload_tiles(["grass.png", "grass.png", "gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "deep-water.png", "basalt1.png"])
@@ -100,7 +101,7 @@ while running:
         camera.pos.x * scalarX, camera.pos.y * scalarY, 1)
 
     testText = TextSprite('Arial', 16,
-                           f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)}", False,
+                           f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}", False,
                           (255, 255, 255), graphic_handler
                           )
 
