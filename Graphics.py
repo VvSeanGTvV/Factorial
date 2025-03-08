@@ -7,12 +7,12 @@ def getDisplay():
 
 
 class Window:
-    def __init__(self, dx, dy, vx, vy, mode, fpsLock, vsync):
+    def __init__(self, dx, dy, vx, vy, mode, target_fps, vsync):
         width, height = vx, vy
         self.defX, self.defY = dx, dy
         self.window = pygame.display
         self.currMode = mode
-        self.lockFPS = fpsLock
+        self.target_fps = target_fps
 
         # OPENGL CONFIGURATION
         flags = pygame.HWSURFACE | pygame.DOUBLEBUF | mode
@@ -43,13 +43,18 @@ class Graphics:
         self.fps_update_interval = 0.5  # Update FPS every 1 second
         self.current_fps = 0  # Store the current FPS value
 
+        self.expected_delta = 0.1 / window.target_fps  # Expected delta for 60 FPS
+
     # DELTA SYSTEM
     def delta(self):
         # Calculate delta time
         pygame.time.Clock()
-        delta_time = self.clock.tick(self.curr_win.lockFPS) / 1000  # Convert milliseconds to seconds
-        delta_time = min(delta_time, 0.1)
-        return delta_time
+        delta = self.clock.tick() / 1000  # Convert milliseconds to seconds
+
+        # Normalize delta to match 60 FPS behavior
+        normalized_delta = delta * self.expected_delta
+        #normalized_delta = min(normalized_delta, 0.1)
+        return normalized_delta
 
     def getFPS(self):
         """Calculate and return the FPS, updating at a fixed interval."""
