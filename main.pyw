@@ -26,16 +26,15 @@ running = True
 
 velX = 0
 velY = 0
-speed = 10
-maxVel = 50
+speed = 1
+maxVel = 10
 pygame.font.init()
 
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 128, graphic_handler, 4)
+world = Map(window, 128, graphic_handler, 8)
 
 
-tiles = world.preload_tiles(["grass.png", "grass.png", "gold-sand1.png", "gold-sand2.png", "gold-sand3.png", "deep-water.png", "basalt1.png"])
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -43,19 +42,18 @@ while running:
             running = False
 
     # HANDLER FPS
-    gameSpeed = graphic_handler.delta()
-    scalarX, scalarY = graphic_handler.getWindowScale()
+    delta = (graphic_handler.delta() * 60)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_a]:
-        velX += speed * gameSpeed
+        velX += speed * delta
     if keys[pygame.K_d]:
-        velX -= speed * gameSpeed
+        velX -= speed * delta
 
     if keys[pygame.K_w]:
-        velY += speed * gameSpeed
+        velY += speed * delta
     if keys[pygame.K_s]:
-        velY -= speed * gameSpeed
+        velY -= speed * delta
 
     if keys[pygame.K_x]:
         # Quit Pygame
@@ -66,18 +64,18 @@ while running:
         player.update_position_world(-sys.maxsize // 100, -sys.maxsize // 100)
 
     camera.update_position(
-        Mathf.lerp(camera.pos.x, -player.worldx, speed * gameSpeed / scalarX),
-        Mathf.lerp(camera.pos.y, -player.worldy, speed * gameSpeed / scalarY)
+        Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
+        Mathf.lerp(camera.pos.y, -player.worldy, delta / 25)
     )
 
     px, py = player.get_position()
     player.update_position_world(player.worldx - velX, player.worldy - velY)
 
 
-    if (velX > maxVel / 10):
+    if (velX > maxVel * delta):
         velX -= velX / maxVel
 
-    if (velX < -maxVel / 10):
+    if (velX < -maxVel * delta):
         velX += -velX / maxVel
 
     if (velX < 0):
@@ -85,9 +83,9 @@ while running:
     if (velX > 0):
         velX -= velX / maxVel
 
-    if (velY > maxVel / 10):
+    if (velY > maxVel * delta):
         velY -= velY / maxVel
-    if (velY < -maxVel / 10):
+    if (velY < -maxVel * delta):
         velY += -velY / maxVel
 
     if (velY < 0):
@@ -96,9 +94,7 @@ while running:
         velY -= velY / maxVel
     # print(velX, velY)
     window.display.fill((0, 0, 0))
-    world.render(
-        tiles,
-        camera.pos.x * scalarX, camera.pos.y * scalarY, 1)
+    world.render(camera.pos.x, camera.pos.y)
 
     testText = TextSprite('Arial', 16,
                            f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}", False,

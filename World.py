@@ -1,6 +1,6 @@
 import math
+import time
 
-import numpy as np
 import opensimplex
 import pygame
 from pygame import Surface, Vector2
@@ -35,8 +35,10 @@ class Player:
 
     def render(self, screen, camX, camY, velocity: Vector2):
         self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+            int(self.size * (
+                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (
+                        self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
         if velocity.x != 0 or velocity.y != 0:
@@ -62,13 +64,81 @@ class Map:
         self.loaded_chunks = {}  # Dictionary to store loaded chunks
         self.chunk_size = chunk_size  # Size of each chunk (e.g., 16x16 tiles)
 
+        # Noise generators for temperature and humidity
+        self.temperature_noise = opensimplex.OpenSimplex(seed=seed + 1)
+        self.humidity_noise = opensimplex.OpenSimplex(seed=seed + 2)
+
+        self.blended_tiles = {}  # Cache for blended tiles
+
+        # Biome definitions
+        self.biome_rules = [
+            {
+                "name": "desert",
+                "temperature_range": (0.0, 0.33),
+                "humidity_range": (0.0, 0.5),
+                "tiles": self.preload_tiles(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"]),
+            },
+            {
+                "name": "grassland",
+                "temperature_range": (0.33, 0.66),
+                "humidity_range": (0.0, 0.5),
+                "tiles": self.preload_tiles(["grass1.png", "grass2.png"]),
+            },
+            {
+                "name": "ocean",
+                "temperature_range": (0.33, 0.66),
+                "humidity_range": (0.5, 1.0),
+                "tiles": self.preload_tiles(["water1.png", "water2.png", "water3.png"]),
+            }
+        ]
+
+        # Animation state
+        self.water_animation_frames = self.biome_rules[2]["tiles"]  # Ocean biome tiles
+        self.current_animation_frame = 0
+        self.last_animation_update = time.time()
+        self.animation_frame_duration = 0.2  # Time between frames in seconds
+
+        # Minimap settings
+        self.minimap_size = (200, 200)  # Size of the minimap (width, height)
+        self.minimap_surface = pygame.Surface(self.minimap_size)  # Surface for the minimap
+
     def preload_tiles(self, tile_set):
         """Preloads tile images and stores them in a 1D list."""
         return [pygame.image.load("assets/" + tile) for tile in tile_set]
 
-    def get_tile(self, x, y, tile_set):
-        """Selects a tile based on noise values generated on-the-fly."""
-        # Generate a noise value for the (x, y) coordinate
+    def get_biome(self, x, y):
+        """Determine the biome for a given (x, y) coordinate."""
+        # Generate noise values for temperature and humidity
+        temperature = self.temperature_noise.noise2(x * 0.01, y * 0.01)  # Scale for smoother transitions
+        humidity = self.humidity_noise.noise2(x * 0.01, y * 0.01)  # Scale for smoother transitions
+
+        # Normalize noise values to [0, 1]
+        temperature = (temperature + 1) / 2
+        humidity = (humidity + 1) / 2
+
+        # Find the biome that matches the temperature and humidity
+        for biome in self.biome_rules:
+            temp_min, temp_max = biome["temperature_range"]
+            hum_min, hum_max = biome["humidity_range"]
+            if temp_min <= temperature <= temp_max and hum_min <= humidity <= hum_max:
+                return biome
+
+        # Default biome if no match is found
+        return self.biome_rules[0]
+
+    def get_tile(self, x, y):
+        """Selects a tile based on biome and noise values."""
+        # Get the biome for the current tile
+        biome = self.get_biome(x, y)
+
+        # Get the list of tiles for the biome
+        biome_tiles = biome["tiles"]
+
+        # If it's the ocean biome, return the current animation frame
+        if biome["name"] == "ocean":
+            return biome_tiles[self.current_animation_frame]
+
+        # For other biomes, use noise to select a tile
         noise_scale = 0.05  # Adjust this to control the "zoom" of the noise
         noise_value = self.noise_generator.noise2(x * noise_scale, y * noise_scale)
 
@@ -76,20 +146,41 @@ class Map:
         normalized_noise = (noise_value + 1) / 2  # Convert [-1, 1] to [0, 1]
 
         # Map the normalized noise value to a tile index
-        tile_index = int(normalized_noise * len(tile_set))  # Scale to tile_set length
-        tile_index = max(0, min(tile_index, len(tile_set) - 1))  # Clamp to valid range
+        tile_index = int(normalized_noise * len(biome_tiles))  # Scale to biome_tiles length
+        tile_index = max(0, min(tile_index, len(biome_tiles) - 1))  # Clamp to valid range
 
-        return tile_set[tile_index]  # Return the selected tile
+        return biome_tiles[tile_index]  # Return the selected tile
 
-    def load_chunk(self, chunk_x, chunk_y, tile_set, tile_size):
+    def update_animation(self):
+        """Updates the animation frame for water tiles."""
+        current_time = time.time()
+        if current_time - self.last_animation_update >= self.animation_frame_duration:
+            self.current_animation_frame = (self.current_animation_frame + 1) % len(self.water_animation_frames)
+            self.last_animation_update = current_time
+
+    def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""
         chunk_tiles = []
         for y in range(chunk_y * self.chunk_size, (chunk_y + 1) * self.chunk_size):
             for x in range(chunk_x * self.chunk_size, (chunk_x + 1) * self.chunk_size):
-                tile_sprite = self.get_tile(x, y, tile_set)
-                tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
-                tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
-                chunk_tiles.append(tile_sprite)
+                # Get the biome for the current tile
+                biome = self.get_biome(x, y)
+
+                # If it's the ocean biome, preload all animation frames
+                if biome["name"] == "ocean":
+                    tile_frames = []
+                    for frame in biome["tiles"]:
+                        tile_sprite = pygame.transform.scale(frame, (tile_size, tile_size))
+                        tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
+                        tile_frames.append(tile_sprite)
+                    chunk_tiles.append(tile_frames)
+                else:
+                    # For non-ocean tiles, preload a single frame
+                    tile_sprite = self.get_tile(x, y)
+                    tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
+                    tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
+                    chunk_tiles.append([tile_sprite])  # Store as a list for consistency
+
         self.loaded_chunks[(chunk_x, chunk_y)] = chunk_tiles
 
     def unload_chunk(self, chunk_x, chunk_y):
@@ -97,7 +188,10 @@ class Map:
         if (chunk_x, chunk_y) in self.loaded_chunks:
             del self.loaded_chunks[(chunk_x, chunk_y)]
 
-    def render(self, tile_set, camX, camY, scale_factor):
+    def render(self, camX, camY, scale_factor=1):
+        # Update the animation frame
+        self.update_animation()
+
         # Define the base resolution (logical resolution)
         base_width = self.curr_win.defX
         base_height = self.curr_win.defY
@@ -132,7 +226,7 @@ class Map:
         for chunk_x in range(start_chunk_x, end_chunk_x):
             for chunk_y in range(start_chunk_y, end_chunk_y):
                 if (chunk_x, chunk_y) not in self.loaded_chunks:
-                    self.load_chunk(chunk_x, chunk_y, tile_set, tile_size)
+                    self.load_chunk(chunk_x, chunk_y, tile_size)
 
         # Unload chunks that are no longer visible
         chunks_to_unload = []
@@ -164,9 +258,16 @@ class Map:
                             render_x + tile_size > 0 and render_x < screen_width and
                             render_y + tile_size > 0 and render_y < screen_height
                     ):
-                        tile_sprite = self.loaded_chunks[chunk_coords][
-                            (y - chunk_y * self.chunk_size) * self.chunk_size + (x - chunk_x * self.chunk_size)
-                            ]
+                        # Get the tile from the chunk
+                        tile_index = (y - chunk_y * self.chunk_size) * self.chunk_size + (x - chunk_x * self.chunk_size)
+                        tile_frames = self.loaded_chunks[chunk_coords][tile_index]
+
+                        # For ocean tiles, use the current animation frame
+                        if len(tile_frames) > 1:
+                            tile_sprite = tile_frames[self.current_animation_frame]
+                        else:
+                            tile_sprite = tile_frames[0]
+
                         batch_tiles.append((tile_sprite, (render_x, render_y)))
 
         # Clear the scaled surface
@@ -176,10 +277,12 @@ class Map:
         self.scaled_surface.blits(batch_tiles)
 
         # Upscale the scaled surface to the display resolution
-        scaled_to_display = pygame.transform.scale(self.scaled_surface, (self.curr_win.get_display().current_w, self.curr_win.get_display().current_h))
+        scaled_to_display = pygame.transform.scale(self.scaled_surface, (
+            self.curr_win.get_display().current_w, self.curr_win.get_display().current_h))
 
         # Render the upscaled surface to the display
         self.curr_win.display.blit(scaled_to_display, (0, 0))
+
 
 class Camera:
     def __init__(self, x, y):

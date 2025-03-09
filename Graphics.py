@@ -43,18 +43,15 @@ class Graphics:
         self.fps_update_interval = 0.5  # Update FPS every 1 second
         self.current_fps = 0  # Store the current FPS value
 
-        self.expected_delta = 0.1 / window.target_fps  # Expected delta for 60 FPS
+        self.prev_time = time.time()
 
     # DELTA SYSTEM
     def delta(self):
         # Calculate delta time
-        pygame.time.Clock()
-        delta = self.clock.tick() / 1000  # Convert milliseconds to seconds
-
-        # Normalize delta to match 60 FPS behavior
-        normalized_delta = delta * self.expected_delta
-        #normalized_delta = min(normalized_delta, 0.1)
-        return normalized_delta
+        now_time = time.time()
+        delta = now_time - self.prev_time
+        self.prev_time = now_time
+        return delta
 
     def getFPS(self):
         """Calculate and return the FPS, updating at a fixed interval."""
