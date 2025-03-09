@@ -97,7 +97,8 @@ while running:
     world.render(camera.pos.x, camera.pos.y)
 
     testText = TextSprite('Arial', 16,
-                           f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}", False,
+                           f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
+                           f"FPS: {int(graphic_handler.getFPS())}", False,
                           (255, 255, 255), graphic_handler
                           )
 
