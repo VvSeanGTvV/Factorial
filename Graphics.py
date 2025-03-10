@@ -8,6 +8,7 @@ def getDisplay():
 
 class Window:
     def __init__(self, dx, dy, vx, vy, mode, target_fps, vsync):
+        """Creates a Window Enviroment"""
         width, height = vx, vy # Set the Window Size
         self.defX, self.defY = dx, dy # Set renderable camera Size
         self.window = pygame.display # get the display
@@ -32,8 +33,7 @@ class Window:
         return self.window.Info() # Get the window
 
 
-class Graphics:
-
+class Handler:
     def __init__(self, window: Window, super_sample): # Initalize func (for class)
         self.curr_win = window
         self.clock = pygame.time.Clock()
@@ -86,13 +86,25 @@ class Graphics:
 
 class TextSprite:
 
-    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphic_handler: Graphics):
+    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphic_handler: Handler):
+
+        self.text_settings = { # SAVE THE SETTING (used for updating the string)
+            "size": font_size,
+            "antialias": antialias,
+            "color": color,
+            "font": system_font
+        }
+
         self.curr_font = pygame.font.SysFont(system_font, font_size, True)
         self.curr_text_surface = self.curr_font.render(string, antialias, color)
         self.graphic_handler = graphic_handler
 
+    def update_text(self, string: str):
+        self.curr_font = pygame.font.SysFont(self.text_settings["font"], self.text_settings["size"], True)
+        self.curr_text_surface = self.curr_font.render(string, self.text_settings["antialias"], self.text_settings["color"])
+
     def draw_text(self, screen, position):
         scaleX, scaleY = self.graphic_handler.getWindowScale()
-        self.curr_text_surface = pygame.transform.scale(self.curr_text_surface, (
+        text_surface = pygame.transform.scale(self.curr_text_surface, (
         self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
-        screen.blit(self.curr_text_surface, position)
+        screen.blit(text_surface, position)

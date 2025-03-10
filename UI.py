@@ -1,4 +1,5 @@
 import pygame
+from pygame import Vector2
 
 from Graphics import TextSprite
 
@@ -12,9 +13,10 @@ class Button:
         self.color_hover = color_hover
         self.color_clicked = color_clicked
 
-    def render(self):
+    def render(self, screen, position: Vector2):
         mouse = pygame.mouse.get_pos()
-        if width/2 <= mouse[0] <= width/2+140 and height/2 <= mouse[1] <= height/2+40:
-            pygame.draw.rect(screen, color_light,[width/2,height/2,140,40])
+        self.text.draw_text(screen, (position.x, position.y))
+        if self.width/2 <= mouse[0] <= self.width/2+140 and self.height/2 <= mouse[1] <= self.height/2+40:
+            pygame.draw.rect(screen, self.color_hover,[self.width/2,self.height/2, position.x,position.y])
         else:
-            pygame.draw.rect(screen,color_dark,[width/2,height/2,140,40])
+            pygame.draw.rect(screen,self.color_clicked,[self.width/2,self.height/2, position.x,position.y])

@@ -7,18 +7,19 @@ from pygame import Vector2
 import ctypes
 
 import Mathf
-from Graphics import Graphics, Window, TextSprite
+from Graphics import Handler, Window, TextSprite
+from UI import Button
 from World import Player, Camera, Map
 
 # Initialize Pygame
 pygame.init()
 
 # Set window dimensions
-user32 = ctypes.windll.user32 # Get win32
+user32 = ctypes.windll.user32 # Get win32 file
 user32.SetProcessDPIAware() # Calculate DPI (used for high DPI display)
 screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
 window = Window(640, 360, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
-graphic_handler = Graphics(window, 1)
+graphic_handler = Handler(window, 1)
 
 # Set window title
 pygame.display.set_caption("Factorial [DEV-01]")
@@ -34,9 +35,17 @@ pygame.font.init()
 
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, random.randint(1, sys.maxsize), graphic_handler, 8)
+world = Map(window, 256, graphic_handler, 8)
+button_test = Button(TextSprite('Arial', 16,
+                               f"RUNNER", False,
+                               (255, 255, 255), graphic_handler
+                               ), 240, 60, (0,0,0), (255,255,255), (125,125,125))
 
-
+testText = TextSprite('Arial', 16,
+                      f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
+                      f"FPS: {int(graphic_handler.getFPS())}", False,
+                      (255, 255, 255), graphic_handler
+                      )
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -94,17 +103,16 @@ while running:
         velY += -velY / maxVel
     if (velY > 0):
         velY -= velY / maxVel
-    # print(velX, velY)
     window.display.fill((0, 0, 0))
+
+    world.update_animation()
     world.render(camera.pos.x, camera.pos.y)
+    #button_test.render(window.display, Vector2(120, 40))
 
-    testText = TextSprite('Arial', 16,
-                           f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
-                           f"FPS: {int(graphic_handler.getFPS())}", False,
-                          (255, 255, 255), graphic_handler
-                          )
+    testText.draw_text(window.display, (16, 16))
+    testText.update_text(f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
+                         f"FPS: {int(graphic_handler.getFPS())}")
 
-    TextSprite.draw_text(testText, window.display, (16, 16))
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
     # Update the display

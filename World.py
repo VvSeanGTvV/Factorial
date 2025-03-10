@@ -4,15 +4,14 @@ import time
 import opensimplex
 import pygame
 from pygame import Surface, Vector2
-
-import Graphics
+from Graphics import Handler
 
 
 class Player:
     worldx = 0
     worldy = 0
 
-    def __init__(self, x, y, sprite: Surface, size, graphic_handler: Graphics):
+    def __init__(self, x, y, sprite: Surface, size, graphic_handler: Handler):
         self.x = x
         self.y = y
         self.sprite = sprite
@@ -63,6 +62,7 @@ class Map:
         self.tile_cache = {}  # Cache for scaled and supersampled tiles
         self.loaded_chunks = {}  # Dictionary to store loaded chunks
         self.chunk_size = chunk_size  # Size of each chunk (e.g., 16x16 tiles)
+        self.animation_timer = 0
 
         # Noise generators for temperature and humidity
         self.temperature_noise = opensimplex.OpenSimplex(seed=seed + 1)
@@ -159,10 +159,10 @@ class Map:
 
     def update_animation(self):
         """Updates the animation frame for water tiles."""
-        current_time = time.time()
-        if current_time - self.last_animation_update >= self.animation_frame_duration:
+        self.animation_timer = self.animation_timer + self.graphic_handler.delta()
+        if (self.animation_timer >= 1):
             self.current_animation_frame = (self.current_animation_frame + 1) % len(self.water_animation_frames)
-            self.last_animation_update = current_time
+            self.animation_timer = 0
 
     def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""
@@ -196,7 +196,6 @@ class Map:
 
     def render(self, camX, camY, scale_factor=1):
         # Update the animation frame
-        self.update_animation()
 
         # Define the base resolution (logical resolution)
         base_width = self.curr_win.defX
