@@ -222,7 +222,7 @@ class Map:
         camera_right = -camX + base_width  # Use base width for camera calculations
         camera_bottom = -camY + base_height  # Use base height for camera calculations
 
-        # Calculate the range of chunks that are visible within the camera's view
+        # Calculate the range of chunks visible to camera's view
         start_chunk_x = int(camera_left // (self.chunk_size * base_tile_size))
         start_chunk_y = int(camera_top // (self.chunk_size * base_tile_size))
         end_chunk_x = int(camera_right // (self.chunk_size * base_tile_size)) + 1
@@ -232,23 +232,19 @@ class Map:
         for chunk_x in range(start_chunk_x, end_chunk_x):
             for chunk_y in range(start_chunk_y, end_chunk_y):
                 if (chunk_x, chunk_y) not in self.loaded_chunks:
-                    self.load_chunk(chunk_x, chunk_y, tile_size)
+                    self.load_chunk(chunk_x, chunk_y, tile_size) # Load the new chunks that are not yet loaded
 
-        # Unload chunks that are no longer visible
-        chunks_to_unload = []
+
+        chunks_to_unload = [] # List for chunks that are considered to be unloaded or not viewed to the camera.
         for chunk_coords in self.loaded_chunks:
             if not (start_chunk_x <= chunk_coords[0] < end_chunk_x and
                     start_chunk_y <= chunk_coords[1] < end_chunk_y):
-                chunks_to_unload.append(chunk_coords)
+                chunks_to_unload.append(chunk_coords) # If not in visible range put to chunks to unload list
         for chunk_coords in chunks_to_unload:
-            self.unload_chunk(*chunk_coords)
-
-        # Precompute camera offsets for smooth scrolling
-        camX_offset = -camX % tile_size  # Fractional offset within a tile
-        camY_offset = -camY % tile_size  # Fractional offset within a tile
+            self.unload_chunk(*chunk_coords) # If on list, unload the chunk make it not render to the camera.
 
         # List to store tiles and their positions for batch rendering
-        batch_tiles = []
+        batch_tiles = [] # Cache all tiles and their positions for batch rendering
 
         # Collect visible tiles for batch rendering
         for chunk_coords in self.loaded_chunks:
@@ -259,7 +255,7 @@ class Map:
                     render_x = (x * tile_size - -camX) * scale_factor
                     render_y = (y * tile_size - -camY) * scale_factor
 
-                    # Add the tile and its position to the batch list
+                    # Add the tile and its position to the batch list if the tile is within the camera's viewable area
                     if (
                             render_x + tile_size > 0 and render_x < screen_width and
                             render_y + tile_size > 0 and render_y < screen_height
@@ -291,11 +287,11 @@ class Map:
 
 
 class Camera:
-    def __init__(self, x, y):
+    def __init__(self, x, y): # Creates a Camera
         self.pos = Vector2(x, y)
 
-    def get_world_position(self, tileSize):
+    def get_world_position(self, tileSize): # Get the world position (divided by Tile Size)
         return Vector2(self.pos.x // tileSize, self.pos.y // tileSize)
 
-    def update_position(self, x, y):
+    def update_position(self, x, y): # Update a Camera's Position
         self.pos = Vector2(x, y)

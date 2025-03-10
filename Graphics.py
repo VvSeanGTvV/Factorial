@@ -8,11 +8,11 @@ def getDisplay():
 
 class Window:
     def __init__(self, dx, dy, vx, vy, mode, target_fps, vsync):
-        width, height = vx, vy
-        self.defX, self.defY = dx, dy
-        self.window = pygame.display
+        width, height = vx, vy # Set the Window Size
+        self.defX, self.defY = dx, dy # Set renderable camera Size
+        self.window = pygame.display # get the display
         self.currMode = mode
-        self.target_fps = target_fps
+        self.target_fps = target_fps # Set the target FPS
 
         # OPENGL CONFIGURATION
         flags = pygame.HWSURFACE | pygame.DOUBLEBUF | mode
@@ -29,12 +29,12 @@ class Window:
         self.window.set_mode((dx, dy))
 
     def get_display(self):
-        return self.window.Info()
+        return self.window.Info() # Get the window
 
 
 class Graphics:
 
-    def __init__(self, window: Window, super_sample):
+    def __init__(self, window: Window, super_sample): # Initalize func (for class)
         self.curr_win = window
         self.clock = pygame.time.Clock()
         self.super_sample = super_sample
@@ -45,13 +45,12 @@ class Graphics:
 
         self.prev_time = time.time()
 
-    # DELTA SYSTEM
     def delta(self):
-        # Calculate delta time
-        now_time = time.time()
-        delta = now_time - self.prev_time
-        self.prev_time = now_time
-        return delta
+        """get Delta by time()"""
+        now_time = time.time() # Get the Time
+        delta = now_time - self.prev_time  # Calculate to get delta
+        self.prev_time = now_time # set the previous time to the now time
+        return delta # return delta
 
     def getFPS(self):
         """Calculate and return the FPS, updating at a fixed interval."""
