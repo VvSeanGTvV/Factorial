@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import sys
 
@@ -32,7 +34,7 @@ pygame.font.init()
 
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 256, graphic_handler, 8)
+world = Map(window, random.randint(1, sys.maxsize), graphic_handler, 8)
 
 
 while running:

@@ -79,6 +79,12 @@ class Map:
                 "tiles": self.preload_tiles(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"]),
             },
             {
+                "name": "mountain",
+                "temperature_range": (0.0, 0.77),
+                "humidity_range": (0.0, 0.2),
+                "tiles": self.preload_tiles(["basalt1.png"]),
+            },
+            {
                 "name": "grassland",
                 "temperature_range": (0.33, 0.66),
                 "humidity_range": (0.0, 0.5),
