@@ -2,6 +2,7 @@ import random
 
 import pygame
 import sys
+import subprocess
 
 from pygame import Vector2
 import ctypes
@@ -14,16 +15,24 @@ from World import Player, Camera, Map
 # Initialize Pygame
 pygame.init()
 
-# Set window dimensions
-user32 = ctypes.windll.user32  # Get win32 file
-user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
-screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
+# Set window dimensions (dependent on device)
+screen_width, screen_height = 0, 0
+if sys.platform == "linux":
+    output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0] # Communicate with xrandr (subprocess PIPELINE), get resolution by using SHELL
+    resolution = output.split()[0].split(b'x') # Split to two variables (two numbers)
+    screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(resolution[1].decode('UTF-8')) # Decode by UTF-8 and use it as its resolution
+
+if sys.platform == "win32:
+    user32 = ctypes.windll.user32  # Get win32 file (in Windows)
+    user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
+    screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)) # Get the resolution by System Metrics
+
 game_width, game_height = 640, 360
 window = Window(game_width, game_height, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Handler(window, 1)
 
 # Set window title
-pygame.display.set_caption("Factorial [DEV-01]")
+pygame.display.set_caption("Factorial [DEV-02]")
 
 # Game loop
 running = True
