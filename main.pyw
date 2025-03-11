@@ -15,10 +15,11 @@ from World import Player, Camera, Map
 pygame.init()
 
 # Set window dimensions
-user32 = ctypes.windll.user32 # Get win32 file
-user32.SetProcessDPIAware() # Calculate DPI (used for high DPI display)
+user32 = ctypes.windll.user32  # Get win32 file
+user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
 screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))
-window = Window(640, 360, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
+game_width, game_height = 640, 360
+window = Window(game_width, game_height, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Handler(window, 1)
 
 # Set window title
@@ -33,19 +34,34 @@ speed = 1
 maxVel = 10
 pygame.font.init()
 
+
+def close():
+    pygame.quit()
+    sys.exit()
+
+
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 256, graphic_handler, 8)
-button_test = Button(TextSprite('Arial', 16,
-                               f"welcome", False,
-                               (255, 255, 255), graphic_handler
-                               ), 120, 40, (0,0,0), (255,255,255), (125,125,125))
 
-testText = TextSprite('Arial', 16,
+quit_button = Button(TextSprite('Agency FB', 16,
+                                f"quit game", False,
+                                (255, 255, 255), graphic_handler
+                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: close()
+                     )
+
+edge_button = Button(TextSprite('Agency FB', 16,
+                                f"edge map", False,
+                                (255, 255, 255), graphic_handler
+                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: player.update_position_world(-sys.maxsize // 100, -sys.maxsize // 100)
+                     )
+
+testText = TextSprite('Agency FB', 16,
                       f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
                       f"FPS: {int(graphic_handler.getFPS())}", False,
                       (255, 255, 255), graphic_handler
                       )
+
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -66,14 +82,6 @@ while running:
     if keys[pygame.K_s]:
         velY -= speed * delta
 
-    if keys[pygame.K_x]:
-        # Quit Pygame
-        pygame.quit()
-        sys.exit()
-
-    if keys[pygame.K_m]:
-        player.update_position_world(-sys.maxsize // 100, -sys.maxsize // 100)
-
     camera.update_position(
         Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
         Mathf.lerp(camera.pos.y, -player.worldy, delta / 25)
@@ -81,7 +89,6 @@ while running:
 
     px, py = player.get_position()
     player.update_position_world(player.worldx - velX, player.worldy - velY)
-
 
     if (velX > maxVel * delta):
         velX -= velX / maxVel
@@ -115,7 +122,11 @@ while running:
     )
 
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
-    button_test.render(window.display, Vector2(25, 25))
+    edge_button.render(window.display, Vector2(game_width - 60, game_height - 20))
+    edge_button.update()
+
+    quit_button.render(window.display, Vector2(game_width - 60, game_height - 10))
+    quit_button.update()
 
     # Update the display
     pygame.display.update()  # Efficient refresh

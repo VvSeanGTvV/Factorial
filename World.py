@@ -99,7 +99,7 @@ class Map:
         ]
 
         # Animation state
-        self.water_animation_frames = self.biome_rules[3]["tiles"]  # Ocean biome tiles
+        self.water_animation_frames = self.get_biome_rules("ocean")["tiles"]  # Ocean biome tiles
         self.current_animation_frame = 0
         self.last_animation_update = time.time()
         self.animation_frame_duration = 0.2  # Time between frames in seconds
@@ -107,6 +107,12 @@ class Map:
         # Minimap settings
         self.minimap_size = (200, 200)  # Size of the minimap (width, height)
         self.minimap_surface = pygame.Surface(self.minimap_size)  # Surface for the minimap
+
+    def get_biome_rules(self, name: str):
+        for biome in self.biome_rules:
+            if biome["name"] == name:
+                return biome
+        return None
 
     def preload_tiles(self, tile_set):
         """Preloads tile images and stores them in a 1D list."""

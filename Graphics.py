@@ -93,7 +93,7 @@ class Handler:
 class TextSprite:
 
     def __init__(self, system_font, font_size: int, string: str, antialias: bool, color, graphic_handler: Handler):
-
+        """Creates a text sprite"""
         self.text_settings = { # SAVE THE SETTING (used for updating the string)
             "size": font_size,
             "antialias": antialias,
