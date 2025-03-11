@@ -35,7 +35,7 @@ class Button:
         mouse = pygame.mouse.get_pos()
 
         self.button_position = position
-        if (self.pressed):
+        if self.pressed:
             pygame.draw.rect(screen, self.color_clicked,
                              [position.x * scaleX, position.y * scaleY, (self.width / 2) * scaleX,
                               (self.height / 2) * scaleY])

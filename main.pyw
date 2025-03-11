@@ -51,16 +51,16 @@ def toggle():
     global options_opened
     options_opened = not options_opened
 
-options_button = Button(TextSprite('Agency FB', 16,
+options_button = Button(TextSprite('Arial', 16,
                                 f"options", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: toggle()
+                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle()
                      )
 
-quit_button = Button(TextSprite('Agency FB', 16,
+quit_button = Button(TextSprite('Arial', 16,
                                 f"quit game", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205 - 50, 205 - 50, 205 - 50), (125 - 50, 125 - 50, 125 - 50), lambda: close()
+                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: close()
                      )
 
 testText = TextSprite('Agency FB', 16,
@@ -131,10 +131,10 @@ while running:
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
     if options_opened:
-        quit_button.render(window.display, Vector2(game_width - 60, game_height - 20))
+        quit_button.render(window.display, Vector2(game_width - 60, 10))
         quit_button.update()
 
-    options_button.render(window.display, Vector2(game_width - 60, game_height - 10))
+    options_button.render(window.display, Vector2(game_width - 60, 0))
     options_button.update()
 
     # Update the display
