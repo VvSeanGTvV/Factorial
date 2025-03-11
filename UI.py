@@ -14,9 +14,22 @@ class Button:
         self.color_clicked = color_clicked
 
     def render(self, screen, position: Vector2):
+        scaleX, scaleY = self.text.graphic_handler.getWindowScale()
         mouse = pygame.mouse.get_pos()
-        self.text.draw_text(screen, (position.x, position.y))
-        if self.width/2 <= mouse[0] <= self.width/2+140 and self.height/2 <= mouse[1] <= self.height/2+40:
-            pygame.draw.rect(screen, self.color_hover,[self.width/2,self.height/2, position.x,position.y])
+
+        if position.x * scaleX <= mouse[0] <= (self.width * scaleX / 2) + (position.x * scaleX) and position.y * scaleY <= mouse[1] <= (self.height * scaleY / 2) + (position.y * scaleY):
+            pygame.draw.rect(screen, self.color_hover,
+                             [position.x * scaleX, position.y * scaleY, (self.width / 2) * scaleX,
+                              (self.height / 2) * scaleY])
         else:
-            pygame.draw.rect(screen,self.color_clicked,[self.width/2,self.height/2, position.x,position.y])
+            pygame.draw.rect(screen, self.color_clicked,
+                             [position.x * scaleX, position.y * scaleY, (self.width / 2) * scaleX,
+                              (self.height / 2) * scaleY])
+        self.text.draw_text_rect(screen,
+                                 (position.x * scaleX + ((self.width * scaleX) / (self.text.text_settings["size"] * scaleX) / 2),
+                                  position.y * scaleY + ((self.height * scaleY) / (self.text.text_settings["size"] * scaleY) / 2)),
+                                 Vector2(
+                                             ((self.width * scaleX) / (self.text.text_settings["size"] * scaleX) * 7.7),
+                                             ((self.height * scaleY) / (self.text.text_settings["size"] * scaleY) * 8)
+                                        )
+                                 )

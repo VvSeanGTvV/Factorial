@@ -1,6 +1,9 @@
 import pygame
 import time
 
+from pygame import Vector2
+from pygame.rect import RectType
+
 
 def getDisplay():
     return pygame.display.Info()
@@ -52,6 +55,9 @@ class Handler:
         self.prev_time = now_time # set the previous time to the now time
         return delta # return delta
 
+    def delta_target(self):
+        return self.delta() * 60
+
     def getFPS(self):
         """Calculate and return the FPS, updating at a fixed interval."""
         current_time = time.time()
@@ -86,13 +92,14 @@ class Handler:
 
 class TextSprite:
 
-    def __init__(self, system_font, font_size, string: str, antialias: bool, color, graphic_handler: Handler):
+    def __init__(self, system_font, font_size: int, string: str, antialias: bool, color, graphic_handler: Handler):
 
         self.text_settings = { # SAVE THE SETTING (used for updating the string)
             "size": font_size,
             "antialias": antialias,
             "color": color,
-            "font": system_font
+            "font": system_font,
+            "text": string
         }
 
         self.curr_font = pygame.font.SysFont(system_font, font_size, True)
@@ -102,6 +109,19 @@ class TextSprite:
     def update_text(self, string: str):
         self.curr_font = pygame.font.SysFont(self.text_settings["font"], self.text_settings["size"], True)
         self.curr_text_surface = self.curr_font.render(string, self.text_settings["antialias"], self.text_settings["color"])
+
+    def update_self(self):
+        self.update_text(self.text_settings["text"])
+
+    def update_size(self, font_size: int):
+        self.text_settings["size"] = font_size
+        self.update_self()
+
+    def draw_text_rect(self, screen, position, rect: Vector2):
+        scaleX, scaleY = self.graphic_handler.getWindowScale()
+        text_surface = pygame.transform.scale(self.curr_text_surface, (
+            rect.x * scaleX, rect.y * scaleY))
+        screen.blit(text_surface, position)
 
     def draw_text(self, screen, position):
         scaleX, scaleY = self.graphic_handler.getWindowScale()

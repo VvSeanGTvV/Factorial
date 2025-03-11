@@ -99,7 +99,7 @@ class Map:
         ]
 
         # Animation state
-        self.water_animation_frames = self.biome_rules[2]["tiles"]  # Ocean biome tiles
+        self.water_animation_frames = self.biome_rules[3]["tiles"]  # Ocean biome tiles
         self.current_animation_frame = 0
         self.last_animation_update = time.time()
         self.animation_frame_duration = 0.2  # Time between frames in seconds
@@ -159,10 +159,9 @@ class Map:
 
     def update_animation(self):
         """Updates the animation frame for water tiles."""
-        self.animation_timer = self.animation_timer + self.graphic_handler.delta()
-        if (self.animation_timer >= 1):
-            self.current_animation_frame = (self.current_animation_frame + 1) % len(self.water_animation_frames)
-            self.animation_timer = 0
+        self.animation_timer = self.animation_timer + self.graphic_handler.delta_target()
+        self.current_animation_frame = (math.floor(self.animation_timer * 2)) % len(self.water_animation_frames)
+
 
     def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""
