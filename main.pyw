@@ -40,20 +40,27 @@ def close():
     sys.exit()
 
 
+
+
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 256, graphic_handler, 8)
 
+options_opened = False
+def toggle():
+    global options_opened
+    options_opened = not options_opened
+
+options_button = Button(TextSprite('Agency FB', 16,
+                                f"options", False,
+                                (255, 255, 255), graphic_handler
+                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: toggle()
+                     )
+
 quit_button = Button(TextSprite('Agency FB', 16,
                                 f"quit game", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: close()
-                     )
-
-edge_button = Button(TextSprite('Agency FB', 16,
-                                f"edge map", False,
-                                (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205, 205), (125, 125, 125), lambda: player.update_position_world(-sys.maxsize // 100, -sys.maxsize // 100)
+                                ), 120, 20, (0, 0, 0), (205 - 50, 205 - 50, 205 - 50), (125 - 50, 125 - 50, 125 - 50), lambda: close()
                      )
 
 testText = TextSprite('Agency FB', 16,
@@ -122,11 +129,13 @@ while running:
     )
 
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
-    edge_button.render(window.display, Vector2(game_width - 60, game_height - 20))
-    edge_button.update()
 
-    quit_button.render(window.display, Vector2(game_width - 60, game_height - 10))
-    quit_button.update()
+    if options_opened:
+        quit_button.render(window.display, Vector2(game_width - 60, game_height - 20))
+        quit_button.update()
+
+    options_button.render(window.display, Vector2(game_width - 60, game_height - 10))
+    options_button.update()
 
     # Update the display
     pygame.display.update()  # Efficient refresh
