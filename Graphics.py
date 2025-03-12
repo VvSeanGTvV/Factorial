@@ -4,11 +4,6 @@ import time
 from pygame import Vector2
 from pygame.rect import RectType
 
-
-def getDisplay():
-    return pygame.display.Info()
-
-
 class Window:
     def __init__(self, dx, dy, vx, vy, mode, target_fps, vsync):
         """Creates a Window Enviroment"""
@@ -92,22 +87,22 @@ class Handler:
 
 class TextSprite:
 
-    def __init__(self, system_font, font_size: int, string: str, antialias: bool, color, graphic_handler: Handler):
+    def __init__(self, font, font_size: int, string: str, antialias: bool, color, graphic_handler: Handler):
         """Creates a text sprite"""
-        self.text_settings = { # SAVE THE SETTING (used for updating the string)
+        self.text_settings = { # SAVE THE SETTING (used for updating the string), etc.
             "size": font_size,
             "antialias": antialias,
             "color": color,
-            "font": system_font,
+            "font": "fonts/" + font,
             "text": string
         }
 
-        self.curr_font = pygame.font.SysFont(system_font, font_size, True)
+        self.curr_font = pygame.font.Font("fonts/" + font, font_size)
         self.curr_text_surface = self.curr_font.render(string, antialias, color)
         self.graphic_handler = graphic_handler
 
     def update_text(self, string: str):
-        self.curr_font = pygame.font.SysFont(self.text_settings["font"], self.text_settings["size"], True)
+        self.curr_font = pygame.font.Font(self.text_settings["font"], self.text_settings["size"])
         self.curr_text_surface = self.curr_font.render(string, self.text_settings["antialias"], self.text_settings["color"])
 
     def update_self(self):
@@ -123,8 +118,14 @@ class TextSprite:
             rect.x * scaleX, rect.y * scaleY))
         screen.blit(text_surface, position)
 
-    def draw_text(self, screen, position):
+    def draw_text(self, screen, position: Vector2):
         scaleX, scaleY = self.graphic_handler.getWindowScale()
         text_surface = pygame.transform.scale(self.curr_text_surface, (
         self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
-        screen.blit(text_surface, position)
+        screen.blit(text_surface, (position.x * scaleX, position.y * scaleY))
+
+    def draw_text_center(self, screen, position: Vector2):
+        scaleX, scaleY = self.graphic_handler.getWindowScale()
+        text_surface = pygame.transform.scale(self.curr_text_surface, (
+            self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
+        screen.blit(text_surface, ((position.x * scaleX) / text_surface.get_rect().width, (position.y * scaleY) / text_surface.get_rect().height))

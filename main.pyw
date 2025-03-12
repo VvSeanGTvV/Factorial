@@ -57,6 +57,7 @@ world = Map(window, 256, graphic_handler, 8)
 
 options_opened = False
 show_stats = True
+in_game = False
 def toggle_options():
     global options_opened
     options_opened = not options_opened
@@ -64,29 +65,46 @@ def toggle_options():
 def toggle_stats():
     global show_stats
     show_stats = not show_stats
+    toggle_options()
 
-options_button = Button(TextSprite('Arial', 16,
-                                f"options", False,
+def toggle_play():
+    global in_game
+    in_game = not in_game
+    toggle_options()
+
+options_button = Button(TextSprite('raster.ttf', 16,
+                                f"options", True,
                                 (255, 255, 255), graphic_handler
                                 ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_options()
                      )
 
-quit_button = Button(TextSprite('Arial', 16,
-                                f"quit game", False,
+quit_button = Button(TextSprite('raster.ttf', 16,
+                                f"quit game", True,
                                 (255, 255, 255), graphic_handler
                                 ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: close()
                      )
 
-stat_button = Button(TextSprite('Arial', 16,
-                                f"advanced stats", False,
+stat_button = Button(TextSprite('raster.ttf', 16,
+                                f"advanced stats", True,
                                 (255, 255, 255), graphic_handler
                                 ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: toggle_stats()
                      )
 
-testText = TextSprite('Agency FB', 16,
+play_button = Button(TextSprite('raster.ttf', 16,
+                                f"play game", True,
+                                (255, 255, 255), graphic_handler
+                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: toggle_play()
+                     )
+
+testText = TextSprite('raster.ttf', 16,
                       f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
                       f"FPS: {int(graphic_handler.getFPS())}", False,
                       (255, 255, 255), graphic_handler
+                      )
+
+title = TextSprite('bluescreen.ttf', 50,
+                      "FACTORIAL", False,
+                      (128, 128, 255), graphic_handler
                       )
 
 while running:
@@ -98,67 +116,80 @@ while running:
     # HANDLER FPS
     delta = graphic_handler.delta_target()
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_a]:
-        velX += speed * delta
-    if keys[pygame.K_d]:
-        velX -= speed * delta
+    if in_game:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a]:
+            velX += speed * delta
+        if keys[pygame.K_d]:
+            velX -= speed * delta
 
-    if keys[pygame.K_w]:
-        velY += speed * delta
-    if keys[pygame.K_s]:
-        velY -= speed * delta
+        if keys[pygame.K_w]:
+            velY += speed * delta
+        if keys[pygame.K_s]:
+            velY -= speed * delta
 
-    camera.update_position(
-        Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
-        Mathf.lerp(camera.pos.y, -player.worldy, delta / 25)
-    )
+        camera.update_position(
+            Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
+            Mathf.lerp(camera.pos.y, -player.worldy, delta / 25)
+        )
 
-    px, py = player.get_position()
-    player.update_position_world(player.worldx - velX, player.worldy - velY)
+        px, py = player.get_position()
+        player.update_position_world(player.worldx - velX, player.worldy - velY)
 
-    if (velX > maxVel * delta):
-        velX -= velX / maxVel
+        if (velX > maxVel * delta):
+            velX -= velX / maxVel
 
-    if (velX < -maxVel * delta):
-        velX += -velX / maxVel
+        if (velX < -maxVel * delta):
+            velX += -velX / maxVel
 
-    if (velX < 0):
-        velX += -velX / maxVel
-    if (velX > 0):
-        velX -= velX / maxVel
+        if (velX < 0):
+            velX += -velX / maxVel
+        if (velX > 0):
+            velX -= velX / maxVel
 
-    if (velY > maxVel * delta):
-        velY -= velY / maxVel
-    if (velY < -maxVel * delta):
-        velY += -velY / maxVel
+        if (velY > maxVel * delta):
+            velY -= velY / maxVel
+        if (velY < -maxVel * delta):
+            velY += -velY / maxVel
 
-    if (velY < 0):
-        velY += -velY / maxVel
-    if (velY > 0):
-        velY -= velY / maxVel
-    window.display.fill((0, 0, 0))
+        if (velY < 0):
+            velY += -velY / maxVel
+        if (velY > 0):
+            velY -= velY / maxVel
+        window.display.fill((0, 0, 0))
 
-    world.update_animation()
-    world.render(camera.pos.x, camera.pos.y)
+        world.update_animation()
+        world.render(camera.pos.x, camera.pos.y)
 
-    testText.draw_text(window.display, (16, 16))
-    string_stats = f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)}"
-    if show_stats:
-        string_stats = string_stats + f"| FPS: {int(graphic_handler.getFPS())} | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
-    testText.update_text(string_stats)
+        testText.draw_text(window.display, Vector2(16, 16))
+        string_stats = f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}"
+        if show_stats:
+            string_stats = string_stats + f" | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
+        testText.update_text(string_stats)
 
-    player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
+        player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
-    if options_opened:
-        quit_button.render(window.display, Vector2(game_width - 60, 10))
-        quit_button.update()
+        if options_opened:
+            quit_button.render(window.display, Vector2(game_width - 60, 10))
+            quit_button.update()
 
-        stat_button.render(window.display, Vector2(game_width - 60, 20))
-        stat_button.update()
+            stat_button.render(window.display, Vector2(game_width - 60, 20))
+            stat_button.update()
 
-    options_button.render(window.display, Vector2(game_width - 60, 0))
-    options_button.update()
+        options_button.render(window.display, Vector2(game_width - 60, 0))
+        options_button.update()
+    else:
+        window.display.fill((0,0,0))
+        title.draw_text(window.display, Vector2((game_width / 3), 32))
+        if options_opened:
+            quit_button.render(window.display, Vector2(game_width - 60, 10))
+            quit_button.update()
+
+            play_button.render(window.display, Vector2(game_width - 60, 20))
+            play_button.update()
+
+        options_button.render(window.display, Vector2(game_width - 60, 0))
+        options_button.update()
 
     # Update the display
     pygame.display.update()  # Efficient refresh
