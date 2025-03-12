@@ -22,7 +22,7 @@ if sys.platform == "linux":
     resolution = output.split()[0].split(b'x') # Split to two variables (two numbers)
     screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(resolution[1].decode('UTF-8')) # Decode by UTF-8 and use it as its resolution
 
-if sys.platform == "win32:
+if sys.platform == "win32":
     user32 = ctypes.windll.user32  # Get win32 file (in Windows)
     user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
     screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)) # Get the resolution by System Metrics
