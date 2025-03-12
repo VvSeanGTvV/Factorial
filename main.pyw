@@ -17,11 +17,11 @@ pygame.init()
 
 # Set window dimensions (dependent on device)
 screen_width, screen_height = 0, 0
+
 if sys.platform == "linux":
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0] # Communicate with xrandr (subprocess PIPELINE), get resolution by using SHELL
     resolution = output.split()[0].split(b'x') # Split to two variables (two numbers)
     screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(resolution[1].decode('UTF-8')) # Decode by UTF-8 and use it as its resolution
-
 if sys.platform == "win32":
     user32 = ctypes.windll.user32  # Get win32 file (in Windows)
     user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
@@ -56,20 +56,31 @@ camera = Camera(0, 0)
 world = Map(window, 256, graphic_handler, 8)
 
 options_opened = False
-def toggle():
+show_stats = True
+def toggle_options():
     global options_opened
     options_opened = not options_opened
+
+def toggle_stats():
+    global show_stats
+    show_stats = not show_stats
 
 options_button = Button(TextSprite('Arial', 16,
                                 f"options", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle()
+                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_options()
                      )
 
 quit_button = Button(TextSprite('Arial', 16,
                                 f"quit game", False,
                                 (255, 255, 255), graphic_handler
                                 ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: close()
+                     )
+
+stat_button = Button(TextSprite('Arial', 16,
+                                f"advanced stats", False,
+                                (255, 255, 255), graphic_handler
+                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: toggle_stats()
                      )
 
 testText = TextSprite('Agency FB', 16,
@@ -132,16 +143,19 @@ while running:
     world.render(camera.pos.x, camera.pos.y)
 
     testText.draw_text(window.display, (16, 16))
-    testText.update_text(
-        f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
-        f"FPS: {int(graphic_handler.getFPS())}"
-    )
+    string_stats = f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)}"
+    if show_stats:
+        string_stats = string_stats + f"| FPS: {int(graphic_handler.getFPS())} | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
+    testText.update_text(string_stats)
 
     player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
     if options_opened:
         quit_button.render(window.display, Vector2(game_width - 60, 10))
         quit_button.update()
+
+        stat_button.render(window.display, Vector2(game_width - 60, 20))
+        stat_button.update()
 
     options_button.render(window.display, Vector2(game_width - 60, 0))
     options_button.update()
