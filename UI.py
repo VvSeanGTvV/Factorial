@@ -1,5 +1,6 @@
 import pygame
 from pygame import Vector2
+from pygame.rect import RectType
 
 from Graphics import TextSprite
 
@@ -18,6 +19,8 @@ class Button:
         self.click_listener = click_listener
         self.button_position = Vector2(0, 0)
 
+        self.position = Vector2(0, 0)
+
     def update(self):
         scaleX, scaleY = self.text.graphic_handler.getWindowScale()
         mouse = pygame.mouse.get_pos()
@@ -29,6 +32,9 @@ class Button:
         if not pygame.mouse.get_pressed()[0] and self.pressed:
             self.click_listener()
             self.pressed = False
+
+    def get_rect(self):
+        return RectType(self.button_position.x, self.button_position.y, self.width, self.height)
 
     def render(self, screen, position: Vector2):
         scaleX, scaleY = self.text.graphic_handler.getWindowScale()

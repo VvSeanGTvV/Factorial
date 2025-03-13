@@ -12,27 +12,36 @@ from Graphics import Handler, Window, TextSprite
 from UI import Button
 from World import Player, Camera, Map
 
-# Initialize Pygame
+# Initialize Pygame & fonts module & mixer/audio module
 pygame.init()
+pygame.font.init()
+pygame.mixer.init()
+
+
+# Load the music file
+pygame.mixer.music.load('assets/musics/menu.ogg')
 
 # Set window dimensions (dependent on device)
 screen_width, screen_height = 0, 0
 
 if sys.platform == "linux":
-    output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4',shell=True, stdout=subprocess.PIPE).communicate()[0] # Communicate with xrandr (subprocess PIPELINE), get resolution by using SHELL
-    resolution = output.split()[0].split(b'x') # Split to two variables (two numbers)
-    screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(resolution[1].decode('UTF-8')) # Decode by UTF-8 and use it as its resolution
+    output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4', shell=True, stdout=subprocess.PIPE).communicate()[
+        0]  # Communicate with xrandr (subprocess PIPELINE), get resolution by using SHELL
+    resolution = output.split()[0].split(b'x')  # Split to two variables (two numbers)
+    screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(
+        resolution[1].decode('UTF-8'))  # Decode by UTF-8 and use it as its resolution
 if sys.platform == "win32":
     user32 = ctypes.windll.user32  # Get win32 file (in Windows)
     user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
-    screen_width, screen_height = (user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)) # Get the resolution by System Metrics
+    screen_width, screen_height = (
+    user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))  # Get the resolution by System Metrics
 
 game_width, game_height = 640, 360
 window = Window(game_width, game_height, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
 graphic_handler = Handler(window, 1)
 
 # Set window title
-pygame.display.set_caption("Factorial [DEV-02]")
+pygame.display.set_caption("Factorial [DEVELOPMENT]")
 
 # Game loop
 running = True
@@ -41,23 +50,23 @@ velX = 0
 velY = 0
 speed = 1
 maxVel = 10
-pygame.font.init()
+
 
 
 def close():
     pygame.quit()
     sys.exit()
 
-
-
-
+build = 2 # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 256, graphic_handler, 8)
+world = Map(window, 512, graphic_handler, 8)
 
 options_opened = False
 show_stats = True
 in_game = False
+
+### SETTINGS BUTTONS TODO new ui
 def toggle_options():
     global options_opened
     options_opened = not options_opened
@@ -70,31 +79,50 @@ def toggle_stats():
 def toggle_play():
     global in_game
     in_game = not in_game
+
+def toggle_play_option():
+    toggle_play()
     toggle_options()
 
-options_button = Button(TextSprite('raster.ttf', 16,
-                                f"options", True,
-                                (255, 255, 255), graphic_handler
-                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_options()
-                     )
+### SETTINGS BUTTONS TODO new ui
+settings_button = Button(TextSprite('raster.ttf', 16,
+                                    f"settings", False,
+                                    (255, 255, 255), graphic_handler
+                                    ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_options()
+                         )
 
 quit_button = Button(TextSprite('raster.ttf', 16,
-                                f"quit game", True,
+                                f"exit to menu", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: close()
+                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_play_option()
                      )
+
+desktop_button_settings = Button(TextSprite('raster.ttf', 16,
+                                   f"exit to desktop", False,
+                                   (255, 255, 255), graphic_handler
+                                   ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: close()
+                        )
+
+
 
 stat_button = Button(TextSprite('raster.ttf', 16,
-                                f"advanced stats", True,
+                                f"advanced stats", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: toggle_stats()
+                                ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_stats()
                      )
 
+### MENU BUTTONS
 play_button = Button(TextSprite('raster.ttf', 16,
-                                f"play game", True,
+                                f"PLAY", False,
                                 (255, 255, 255), graphic_handler
-                                ), 120, 20, (0, 0, 0), (205, 205 , 205), (125, 125, 125), lambda: toggle_play()
+                                ), 120 * 2, 20 * 2, (50, 50, 50), (205, 205, 205), (125, 125, 125),
+                     lambda: toggle_play()
                      )
+desktop_button = Button(TextSprite('raster.ttf', 16,
+                                   f"QUIT GAME", False,
+                                   (255, 255, 255), graphic_handler
+                                   ), 120 * 2, 20 * 2, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: close()
+                        )
 
 testText = TextSprite('raster.ttf', 16,
                       f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
@@ -103,9 +131,14 @@ testText = TextSprite('raster.ttf', 16,
                       )
 
 title = TextSprite('bluescreen.ttf', 50,
-                      "FACTORIAL", False,
-                      (128, 128, 255), graphic_handler
-                      )
+                   "FACTORIAL", False,
+                   (0, 255, 255), graphic_handler
+                   )
+
+version = TextSprite('raster.ttf', 12,
+                   f"b{build} [BUILD {sys.platform}]", False,
+                   (0, 255, 255), graphic_handler
+                   )
 
 while running:
     # Handle events
@@ -173,23 +206,31 @@ while running:
             quit_button.render(window.display, Vector2(game_width - 60, 10))
             quit_button.update()
 
-            stat_button.render(window.display, Vector2(game_width - 60, 20))
+            desktop_button_settings.render(window.display, Vector2(game_width - 60, 20))
+            desktop_button_settings.update()
+
+            stat_button.render(window.display, Vector2(game_width - 60, 30))
             stat_button.update()
 
-        options_button.render(window.display, Vector2(game_width - 60, 0))
-        options_button.update()
+        settings_button.render(window.display, Vector2(game_width - 60, 0))
+        settings_button.update()
+        pygame.mixer.music.stop()
     else:
-        window.display.fill((0,0,0))
-        title.draw_text(window.display, Vector2((game_width / 3), 32))
-        if options_opened:
-            quit_button.render(window.display, Vector2(game_width - 60, 10))
-            quit_button.update()
+        window.display.fill((0, 0, 0))
+        title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
+        version.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 86))
 
-            play_button.render(window.display, Vector2(game_width - 60, 20))
-            play_button.update()
+        play_button.render(window.display, Vector2((game_width - (play_button.get_rect().width / 2)) / 2, 200))
+        play_button.update()
 
-        options_button.render(window.display, Vector2(game_width - 60, 0))
-        options_button.update()
+        desktop_button.render(window.display, Vector2((game_width - (desktop_button.get_rect().width / 2)) / 2, 240))
+        desktop_button.update()
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.play(loops=-1)
+
+
+
+
 
     # Update the display
     pygame.display.update()  # Efficient refresh

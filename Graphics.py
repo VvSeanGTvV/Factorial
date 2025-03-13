@@ -93,11 +93,11 @@ class TextSprite:
             "size": font_size,
             "antialias": antialias,
             "color": color,
-            "font": "fonts/" + font,
+            "font": "assets/fonts/" + font,
             "text": string
         }
 
-        self.curr_font = pygame.font.Font("fonts/" + font, font_size)
+        self.curr_font = pygame.font.Font("assets/fonts/" + font, font_size)
         self.curr_text_surface = self.curr_font.render(string, antialias, color)
         self.graphic_handler = graphic_handler
 
@@ -123,6 +123,9 @@ class TextSprite:
         text_surface = pygame.transform.scale(self.curr_text_surface, (
         self.curr_text_surface.get_rect().width * scaleX, self.curr_text_surface.get_rect().height * scaleY))
         screen.blit(text_surface, (position.x * scaleX, position.y * scaleY))
+
+    def get_text_rect(self):
+        return self.curr_text_surface.get_rect()
 
     def draw_text_center(self, screen, position: Vector2):
         scaleX, scaleY = self.graphic_handler.getWindowScale()
