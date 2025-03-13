@@ -24,17 +24,18 @@ pygame.mixer.music.load('assets/musics/menu.ogg')
 # Set window dimensions (dependent on device)
 screen_width, screen_height = 0, 0
 
-if sys.platform == "linux":
+if sys.platform == "win32": # WINDOWS (32-BIT) Resolution
+    user32 = ctypes.windll.user32  # Get win32.dll file (in Windows)
+    user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
+    screen_width, screen_height = (
+        user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))  # Get the resolution by System Metrics
+if sys.platform == "linux": # LINUX Resolution
     output = subprocess.Popen('xrandr | grep "\*" | cut -d" " -f4', shell=True, stdout=subprocess.PIPE).communicate()[
         0]  # Communicate with xrandr (subprocess PIPELINE), get resolution by using SHELL
     resolution = output.split()[0].split(b'x')  # Split to two variables (two numbers)
     screen_width, screen_height = int(resolution[0].decode('UTF-8')), int(
         resolution[1].decode('UTF-8'))  # Decode by UTF-8 and use it as its resolution
-if sys.platform == "win32":
-    user32 = ctypes.windll.user32  # Get win32 file (in Windows)
-    user32.SetProcessDPIAware()  # Calculate DPI (used for high DPI display)
-    screen_width, screen_height = (
-    user32.GetSystemMetrics(0), user32.GetSystemMetrics(1))  # Get the resolution by System Metrics
+
 
 game_width, game_height = 640, 360
 window = Window(game_width, game_height, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
@@ -57,13 +58,13 @@ def close():
     pygame.quit()
     sys.exit()
 
-build = 2 # BUILD VERSION
+build = 3 # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 512, graphic_handler, 8)
 
 options_opened = False
-show_stats = True
+show_stats = False
 in_game = False
 
 ### SETTINGS BUTTONS TODO new ui
