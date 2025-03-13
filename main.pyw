@@ -8,9 +8,10 @@ from pygame import Vector2
 import ctypes
 
 import Mathf
+import World
 from Graphics import Handler, Window, TextSprite
 from UI import Button
-from World import Player, Camera, Map
+from World import Player, Camera, Map, Block
 
 # Initialize Pygame & fonts module & mixer/audio module
 pygame.init()
@@ -140,7 +141,7 @@ version = TextSprite('raster.ttf', 12,
                    f"b{build} [BUILD {sys.platform}]", False,
                    (0, 255, 255), graphic_handler
                    )
-
+placing = None
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -161,6 +162,17 @@ while running:
             velY += speed * delta
         if keys[pygame.K_s]:
             velY -= speed * delta
+
+        if keys[pygame.K_p]:
+            if placing is None:
+                placing = Block(1, pygame.image.load("assets/silver-plating.png"), graphic_handler)
+
+        if keys[pygame.K_o]:
+            if isinstance(placing, Block):
+                placing = None
+            else:
+                placing = None
+
 
         camera.update_position(
             Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
@@ -203,6 +215,9 @@ while running:
 
         player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
+        if isinstance(placing, Block):
+            placing.render(window.display, camera.pos)
+
         if options_opened:
             quit_button.render(window.display, Vector2(game_width - 60, 10))
             quit_button.update()
@@ -216,6 +231,7 @@ while running:
         settings_button.render(window.display, Vector2(game_width - 60, 0))
         settings_button.update()
         pygame.mixer.music.stop()
+
     else:
         window.display.fill((0, 0, 0))
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))

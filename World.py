@@ -6,6 +6,48 @@ import pygame
 from pygame import Surface, Vector2
 from Graphics import Handler
 
+Building = []
+
+class Block:
+    worldx = 0
+    worldy = 0
+
+    placing = True
+    def __init__(self, size, sprite: Surface, graphic_handler: Handler):
+        self.size = size * 16
+        self.sprite = sprite
+        self.graphic_handler = graphic_handler
+
+    def render(self, screen, cam_pos: Vector2, scale_factor=1):
+        camX, camY = cam_pos * (
+                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size = 16 * (
+                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        self.sprite = pygame.transform.scale(self.sprite, (
+            int(self.size * (
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+
+        ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
+        if self.placing:
+            # Snapping logic for placing blocks
+            mouse = pygame.mouse.get_pos()
+            world_mouse_x = (mouse[0] + base_tile_size) / scale_factor
+            world_mouse_y = (mouse[1] + base_tile_size) / scale_factor
+
+            cam_snap_x = (camX // base_tile_size) * base_tile_size
+            cam_snap_y = (camY // base_tile_size) * base_tile_size
+
+            # Snap to the grid in world space
+            snapped_world_x = (((world_mouse_x - cam_snap_x) // base_tile_size) * base_tile_size) - (ss_sprite.get_rect().width)
+            snapped_world_y = (((world_mouse_y - cam_snap_y) // base_tile_size) * base_tile_size) - (ss_sprite.get_rect().height)
+
+            # Render the snapped sprite
+            screen.blit(ss_sprite, (snapped_world_x + camX, snapped_world_y + camY))
+            print(snapped_world_x, snapped_world_y)
+
+
 
 class Player:
     worldx = 0
@@ -107,6 +149,35 @@ class Map:
         # Minimap settings
         self.minimap_size = (200, 200)  # Size of the minimap (width, height)
         self.minimap_surface = pygame.Surface(self.minimap_size)  # Surface for the minimap
+
+    def is_chunk_visible(self, chunk_x, chunk_y, camX, camY, base_tile_size=16):
+        """
+        Check if a chunk is visible within the camera's view.
+
+        Args:
+            chunk_x (int): The chunk's x-coordinate.
+            chunk_y (int): The chunk's y-coordinate.
+            camX (int): The camera's x-coordinate.
+            camY (int): The camera's y-coordinate.
+
+        Returns:
+            bool: True if the chunk is visible, False otherwise.
+        """
+        # Calculate the visible chunk range based on the camera's position
+        camera_left = -camX
+        camera_top = -camY
+        camera_right = -camX + self.curr_win.defX  # Use base width for camera calculations
+        camera_bottom = -camY + self.curr_win.defY  # Use base height for camera calculations
+
+        # Calculate the range of chunks visible to the camera's view
+        start_chunk_x = int(camera_left // (self.chunk_size * base_tile_size))
+        start_chunk_y = int(camera_top // (self.chunk_size * base_tile_size))
+        end_chunk_x = int(camera_right // (self.chunk_size * base_tile_size)) + 1
+        end_chunk_y = int(camera_bottom // (self.chunk_size * base_tile_size)) + 1
+
+        # Check if the chunk is within the visible range
+        return (start_chunk_x <= chunk_x < end_chunk_x and
+                start_chunk_y <= chunk_y < end_chunk_y)
 
     def get_biome_rules(self, name: str):
         for biome in self.biome_rules:
