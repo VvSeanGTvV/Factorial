@@ -165,10 +165,11 @@ while running:
 
         if keys[pygame.K_p]:
             if placing is None:
-                placing = Block(1, pygame.image.load("assets/silver-plating.png"), graphic_handler)
+                placing = Block(1, pygame.image.load("assets/stone-melter.png"), graphic_handler)
 
         if keys[pygame.K_o]:
             if isinstance(placing, Block):
+                placing.place_action()
                 placing = None
             else:
                 placing = None
@@ -213,10 +214,14 @@ while running:
             string_stats = string_stats + f" | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
         testText.update_text(string_stats)
 
-        player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
-
+        # BLOCK RENDER LAYER
+        if len(World.Blocks) > 0:
+            for Build in World.Blocks:
+                Build.render(window.display, camera.pos)
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)
+
+        player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
         if options_opened:
             quit_button.render(window.display, Vector2(game_width - 60, 10))

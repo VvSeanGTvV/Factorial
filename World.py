@@ -6,7 +6,7 @@ import pygame
 from pygame import Surface, Vector2
 from Graphics import Handler
 
-Building = []
+Blocks = []
 
 class Block:
     worldx = 0
@@ -18,11 +18,28 @@ class Block:
         self.sprite = sprite
         self.graphic_handler = graphic_handler
 
+    def check_placement(self):
+        for Build in Blocks:
+            if isinstance(Build, Block):
+                if Build.get_world_position() == self.get_world_position():
+                    return False
+        return True
+
+    def get_world_position(self):
+        return Vector2(self.worldx, self.worldy)
+
+
+    def place_action(self):
+        self.placing = False
+        if self.check_placement():
+            Blocks.append(self)
+
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         camX, camY = cam_pos * (
                 self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
         base_tile_size = 16 * (
                 self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (
                     self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
@@ -45,7 +62,9 @@ class Block:
 
             # Render the snapped sprite
             screen.blit(ss_sprite, (snapped_world_x + camX, snapped_world_y + camY))
-            print(snapped_world_x, snapped_world_y)
+            self.worldx, self.worldy = snapped_world_x, snapped_world_y
+        else:
+            screen.blit(ss_sprite, (self.worldx + camX, self.worldy + camY))
 
 
 
