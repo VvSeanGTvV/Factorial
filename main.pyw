@@ -226,6 +226,7 @@ while running:
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)
 
+
         # PLAYER RENDER LAYER
         player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 

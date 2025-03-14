@@ -55,7 +55,7 @@ class Block:
         for coord in coordinates:
             tile_x, tile_y = coord * (16 * (
                         self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX))
-            self.hitboxes.append(Vector2(self.worldx + tile_x, self.worldy + tile_y))
+            self.hitboxes.append(Vector2(math.floor(self.worldx + tile_x), math.floor(self.worldy + tile_y)))
 
     def place_action(self):
         if self.placing:
