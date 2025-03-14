@@ -133,7 +133,9 @@ class Block:
             screen.blit(placing_sprite, (snapped_world_x + camX, snapped_world_y + camY))
             self.worldx, self.worldy = snapped_world_x, snapped_world_y
         else:
-            screen.blit(ss_sprite, (self.worldx + camX, self.worldy + camY))
+            screen.blit(ss_sprite, ((self.worldx + camX),
+                                    ((self.worldy + camY)
+                                    )))
 
 
 class Player:

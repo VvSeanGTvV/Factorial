@@ -59,7 +59,7 @@ def close():
     pygame.quit()
     sys.exit()
 
-build = 4 # BUILD VERSION
+build = 5 # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 512, graphic_handler, 8)
@@ -163,11 +163,15 @@ while running:
         if keys[pygame.K_s]:
             velY -= speed * delta
 
-        if keys[pygame.K_p]:
+        if keys[pygame.K_1]:
             if placing is None:
                 placing = Block(2, pygame.image.load("assets/command-center.png"), graphic_handler)
 
-        if keys[pygame.K_o]:
+        if keys[pygame.K_2]:
+            if placing is None:
+                placing = Block(1, pygame.image.load("assets/stone-melter.png"), graphic_handler)
+
+        if pygame.mouse.get_pressed()[0]:
             if isinstance(placing, Block):
                 placing.place_action()
                 placing = None
