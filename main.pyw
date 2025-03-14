@@ -39,7 +39,7 @@ if sys.platform == "linux": # LINUX Resolution
 
 
 game_width, game_height = 640, 360
-window = Window(game_width, game_height, screen_width, screen_height, pygame.FULLSCREEN, 60, 0)
+window = Window(game_width, game_height, 640, 360, pygame.RESIZABLE, 60, 0)
 graphic_handler = Handler(window, 1)
 
 # Set window title
@@ -164,12 +164,10 @@ while running:
             velY -= speed * delta
 
         if keys[pygame.K_1]:
-            if placing is None:
-                placing = Block(2, pygame.image.load("assets/command-center.png"), graphic_handler)
+            placing = Block(2, pygame.image.load("assets/command-center.png"), graphic_handler)
 
         if keys[pygame.K_2]:
-            if placing is None:
-                placing = Block(1, pygame.image.load("assets/stone-melter.png"), graphic_handler)
+            placing = Block(1, pygame.image.load("assets/stone-melter.png"), graphic_handler)
 
         if pygame.mouse.get_pressed()[0]:
             if isinstance(placing, Block):

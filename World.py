@@ -53,8 +53,7 @@ class Block:
         coordinates = self.generate_spiral_coordinates(self.block_size)
         # self.hitboxes.append(Vector2(self.worldx, self.worldy))
         for coord in coordinates:
-            tile_x, tile_y = coord * (16 * (
-                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX))
+            tile_x, tile_y = (coord * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)) * 16
             self.hitboxes.append(Vector2(math.floor(self.worldx + tile_x), math.floor(self.worldy + tile_y)))
 
     def place_action(self):
@@ -92,32 +91,33 @@ class Block:
         return coordinates
 
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
-        camX, camY = cam_pos * (
-                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
-        base_tile_size = 16 * (
-                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        # Calculate the scaled camera position
+        camX = cam_pos.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
+        # Calculate the base tile size for X and Y axes independently
+        base_tile_size_x = 16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size_y = 16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+
+        # Scale the sprite based on the current window size
         self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (
-                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
-            int(self.size * (
-                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
+        # Supersample the sprite for better quality
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
+
         if self.placing:
             # Snapping logic for placing blocks
             mouse = pygame.mouse.get_pos()
-            world_mouse_x = (mouse[0] + base_tile_size) / scale_factor
-            world_mouse_y = (mouse[1] + base_tile_size) / scale_factor
 
-            cam_snap_x = (camX // base_tile_size) * base_tile_size
-            cam_snap_y = (camY // base_tile_size) * base_tile_size
+            # Convert mouse position to world space
+            world_mouse_x = (mouse[0] / scale_factor) + camX
+            world_mouse_y = (mouse[1] / scale_factor) + camY
 
-            # Snap to the grid in world space
-            snapped_world_x = (((world_mouse_x - cam_snap_x) // base_tile_size) * base_tile_size) - (
-                ss_sprite.get_rect().width)
-            snapped_world_y = (((world_mouse_y - cam_snap_y) // base_tile_size) * base_tile_size) - (
-                ss_sprite.get_rect().height)
+            # Snap to the grid in world space, using the scaled base_tile_size for X and Y
+            snapped_world_x = (world_mouse_x // base_tile_size_x) * base_tile_size_x - (ss_sprite.get_rect().width / 2)
+            snapped_world_y = (world_mouse_y // base_tile_size_y) * base_tile_size_y - (ss_sprite.get_rect().height / 2)
 
             # Create a copy of the sprite for transparency and tinting
             placing_sprite = ss_sprite.copy()
@@ -130,12 +130,12 @@ class Block:
             placing_sprite.fill(tint_color, special_flags=pygame.BLEND_RGBA_MULT)  # Apply tint
 
             # Render the snapped sprite with transparency and tint
-            screen.blit(placing_sprite, (snapped_world_x + camX, snapped_world_y + camY))
+            screen.blit(placing_sprite, (snapped_world_x - camX, snapped_world_y - camY))
             self.worldx, self.worldy = snapped_world_x, snapped_world_y
         else:
+            # Render the sprite at its current world position
             screen.blit(ss_sprite, ((self.worldx + camX),
-                                    ((self.worldy + camY)
-                                    )))
+                                    ((self.worldy + camY))))
 
 
 class Player:
