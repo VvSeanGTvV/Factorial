@@ -59,7 +59,7 @@ def close():
     pygame.quit()
     sys.exit()
 
-build = 3 # BUILD VERSION
+build = 4 # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 512, graphic_handler, 8)
@@ -165,7 +165,7 @@ while running:
 
         if keys[pygame.K_p]:
             if placing is None:
-                placing = Block(1, pygame.image.load("assets/stone-melter.png"), graphic_handler)
+                placing = Block(2, pygame.image.load("assets/command-center.png"), graphic_handler)
 
         if keys[pygame.K_o]:
             if isinstance(placing, Block):
@@ -205,10 +205,10 @@ while running:
             velY -= velY / maxVel
         window.display.fill((0, 0, 0))
 
+        # FLOOR TILE RENDER
         world.update_animation()
         world.render(camera.pos.x, camera.pos.y)
 
-        testText.draw_text(window.display, Vector2(16, 16))
         string_stats = f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}"
         if show_stats:
             string_stats = string_stats + f" | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
@@ -218,11 +218,15 @@ while running:
         if len(World.Blocks) > 0:
             for Build in World.Blocks:
                 Build.render(window.display, camera.pos)
+
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)
 
+        # PLAYER RENDER LAYER
         player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
 
+        # UI RENDER LAYER
+        testText.draw_text(window.display, Vector2(16, 16))
         if options_opened:
             quit_button.render(window.display, Vector2(game_width - 60, 10))
             quit_button.update()

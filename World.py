@@ -8,6 +8,7 @@ from Graphics import Handler
 
 Blocks = []
 
+
 class Block:
     worldx = 0
     worldy = 0
@@ -15,24 +16,80 @@ class Block:
     placing = True
     def __init__(self, size, sprite: Surface, graphic_handler: Handler):
         self.size = size * 16
+        self.block_size = size
         self.sprite = sprite
         self.graphic_handler = graphic_handler
+
+        # Load sound effects
+        self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")  # Replace with your sound file
+
+        self.hitboxes = []
+
+    def is_within_hitbox(self, Build):
+        """
+        Check if the current block overlaps with another block's hitboxes.
+        """
+        if not isinstance(Build, Block):
+            return False  # Not a Block, no overlap
+
+        # Use set for faster lookups
+        self_hitbox_set = {(h.x, h.y) for h in self.hitboxes if isinstance(h, Vector2)}
+        build_hitbox_set = {(h.x, h.y) for h in Build.hitboxes if isinstance(h, Vector2)}
+
+        # Check for intersection
+        return not self_hitbox_set.isdisjoint(build_hitbox_set)
 
     def check_placement(self):
         for Build in Blocks:
             if isinstance(Build, Block):
-                if Build.get_world_position() == self.get_world_position():
+                if self.is_within_hitbox(Build):
                     return False
         return True
 
     def get_world_position(self):
         return Vector2(self.worldx, self.worldy)
 
+    def auto_hitbox(self):
+        coordinates = self.generate_spiral_coordinates(self.block_size)
+        # self.hitboxes.append(Vector2(self.worldx, self.worldy))
+        for coord in coordinates:
+            tile_x, tile_y = coord * (16 * (
+                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX))
+            self.hitboxes.append(Vector2(self.worldx + tile_x, self.worldy + tile_y))
 
     def place_action(self):
-        self.placing = False
+        if self.placing:
+            self.placing = False
+            self.auto_hitbox()
+
         if self.check_placement():
             Blocks.append(self)
+            self.place_sound.play()  # Play the place sound effect
+
+    def generate_spiral_coordinates(self, n):
+        # Initialize the starting position and direction
+        x, y = 0, 0
+        dx, dy = 0, 1  # Start moving right
+
+        # List to store the coordinates
+        coordinates = []
+
+        # Iterate through the spiral
+        for _ in range(n * n):
+            coordinates.append(Vector2(x, y))  # Add the current position to the list
+
+            # Calculate the next position
+            next_x, next_y = x + dx, y + dy
+
+            # Check if the next position is out of bounds or already visited
+            if (abs(next_x) > n // 2 or abs(next_y) > n // 2 or (next_x, next_y) in coordinates):
+                # Change direction: right -> down -> left -> up -> right ...
+                dx, dy = dy, -dx
+
+            # Update the current position
+            x, y = x + dx, y + dy
+
+        return coordinates
 
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         camX, camY = cam_pos * (
@@ -57,15 +114,26 @@ class Block:
             cam_snap_y = (camY // base_tile_size) * base_tile_size
 
             # Snap to the grid in world space
-            snapped_world_x = (((world_mouse_x - cam_snap_x) // base_tile_size) * base_tile_size) - (ss_sprite.get_rect().width)
-            snapped_world_y = (((world_mouse_y - cam_snap_y) // base_tile_size) * base_tile_size) - (ss_sprite.get_rect().height)
+            snapped_world_x = (((world_mouse_x - cam_snap_x) // base_tile_size) * base_tile_size) - (
+                ss_sprite.get_rect().width)
+            snapped_world_y = (((world_mouse_y - cam_snap_y) // base_tile_size) * base_tile_size) - (
+                ss_sprite.get_rect().height)
 
-            # Render the snapped sprite
-            screen.blit(ss_sprite, (snapped_world_x + camX, snapped_world_y + camY))
+            # Create a copy of the sprite for transparency and tinting
+            placing_sprite = ss_sprite.copy()
+
+            # Set transparency (alpha value)
+            placing_sprite.set_alpha(128)  # 50% transparency (0 = fully transparent, 255 = fully opaque)
+
+            # Tint the sprite with an aqua color (R=0, G=255, B=255)
+            tint_color = (0, 255, 255)  # Aqua color
+            placing_sprite.fill(tint_color, special_flags=pygame.BLEND_RGBA_MULT)  # Apply tint
+
+            # Render the snapped sprite with transparency and tint
+            screen.blit(placing_sprite, (snapped_world_x + camX, snapped_world_y + camY))
             self.worldx, self.worldy = snapped_world_x, snapped_world_y
         else:
             screen.blit(ss_sprite, (self.worldx + camX, self.worldy + camY))
-
 
 
 class Player:
@@ -96,9 +164,9 @@ class Player:
     def render(self, screen, camX, camY, velocity: Vector2):
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (
-                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
             int(self.size * (
-                        self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
         if velocity.x != 0 or velocity.y != 0:
@@ -258,7 +326,6 @@ class Map:
         self.animation_timer = self.animation_timer + self.graphic_handler.delta_target()
         self.current_animation_frame = (math.floor(self.animation_timer * 2)) % len(self.water_animation_frames)
 
-
     def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""
         chunk_tiles = []
@@ -326,19 +393,18 @@ class Map:
         for chunk_x in range(start_chunk_x, end_chunk_x):
             for chunk_y in range(start_chunk_y, end_chunk_y):
                 if (chunk_x, chunk_y) not in self.loaded_chunks:
-                    self.load_chunk(chunk_x, chunk_y, tile_size) # Load the new chunks that are not yet loaded
+                    self.load_chunk(chunk_x, chunk_y, tile_size)  # Load the new chunks that are not yet loaded
 
-
-        chunks_to_unload = [] # List for chunks that are considered to be unloaded or not viewed to the camera.
+        chunks_to_unload = []  # List for chunks that are considered to be unloaded or not viewed to the camera.
         for chunk_coords in self.loaded_chunks:
             if not (start_chunk_x <= chunk_coords[0] < end_chunk_x and
                     start_chunk_y <= chunk_coords[1] < end_chunk_y):
-                chunks_to_unload.append(chunk_coords) # If not in visible range put to chunks to unload list
+                chunks_to_unload.append(chunk_coords)  # If not in visible range put to chunks to unload list
         for chunk_coords in chunks_to_unload:
-            self.unload_chunk(*chunk_coords) # If on list, unload the chunk make it not render to the camera.
+            self.unload_chunk(*chunk_coords)  # If on list, unload the chunk make it not render to the camera.
 
         # List to store tiles and their positions for batch rendering
-        batch_tiles = [] # Cache all tiles and their positions for batch rendering
+        batch_tiles = []  # Cache all tiles and their positions for batch rendering
 
         # Collect visible tiles for batch rendering
         for chunk_coords in self.loaded_chunks:
@@ -381,11 +447,11 @@ class Map:
 
 
 class Camera:
-    def __init__(self, x, y): # Creates a Camera
+    def __init__(self, x, y):  # Creates a Camera
         self.pos = Vector2(x, y)
 
-    def get_world_position(self, tileSize): # Get the world position (divided by Tile Size)
+    def get_world_position(self, tileSize):  # Get the world position (divided by Tile Size)
         return Vector2(self.pos.x // tileSize, self.pos.y // tileSize)
 
-    def update_position(self, x, y): # Update a Camera's Position
+    def update_position(self, x, y):  # Update a Camera's Position
         self.pos = Vector2(x, y)
