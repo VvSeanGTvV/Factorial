@@ -149,6 +149,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            for block in World.Blocks:  # Assuming `blocks` is a list of all blocks
+                block.handle_mouse_click(mouse_pos, camera.pos)
+
     # HANDLER FPS
     delta = graphic_handler.delta_target()
 
@@ -218,8 +223,8 @@ while running:
 
         # BLOCK RENDER LAYER
         if len(World.Blocks) > 0:
-            for Build in World.Blocks:
-                Build.render(window.display, camera.pos)
+            for block in World.Blocks:
+                block.render(window.display, camera.pos)
 
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)

@@ -4,6 +4,8 @@ import time
 import opensimplex
 import pygame
 from pygame import Surface, Vector2
+
+import World
 from Graphics import Handler
 
 Blocks = []
@@ -17,6 +19,7 @@ class Block:
     grid_y = 0
 
     placing = True
+    selected = False
     def __init__(self, size, sprite: Surface, graphic_handler: Handler):
         self.size = size * 16
         self.block_size = size
@@ -25,7 +28,7 @@ class Block:
 
         # Load sound effects
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")  # Replace with your sound file
-
+        self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")  # Replace with your sound file
         self.hitboxes = []
 
     def is_within_hitbox(self, Build):
@@ -68,6 +71,10 @@ class Block:
             Blocks.append(self)
             self.place_sound.play()  # Play the place sound effect
 
+    def destroy_action(self):
+        World.Blocks.remove(self)  # Remove the block from the list
+        self.break_sound.play()  # Play the place sound effect
+
     def generate_spiral_coordinates(self, n):
         # Initialize the starting position and direction
         x, y = 0, 0
@@ -92,6 +99,47 @@ class Block:
             x, y = x + dx, y + dy
 
         return coordinates
+
+    def handle_mouse_click(self, mouse_pos, cam_pos):
+        """
+        Handle mouse clicks to interact with the block.
+        :param mouse_pos: Tuple (x, y) of the mouse position in screen coordinates.
+        :param cam_pos: Vector2 of the camera position.
+        """
+        # Calculate the scaled camera position
+        camX = cam_pos.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+
+        # Calculate the base tile size for X and Y axes independently
+        base_tile_size_x = 16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size_y = 16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+
+        # Recalculate the block's screen position
+        screen_x = self.worldx + camX
+        screen_y = self.worldy + camY
+
+        # Create a Rect for the block
+        block_rect = pygame.Rect(
+            screen_x,
+            screen_y,
+            self.block_size * base_tile_size_x,
+            self.block_size * base_tile_size_y
+        )
+
+        # Check if the mouse click is within the block's Rect
+        if block_rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:  # Left mouse button
+                print(f"Block clicked at grid position: ({self.grid_x}, {self.grid_y})")
+                self.selected = not self.selected  # Toggle selection
+                if self.selected:
+                    print("Block selected!")
+                else:
+                    print("Block deselected!") # TODO do something
+
+            # Right-click: Destroy the block
+            elif pygame.mouse.get_pressed()[2]:  # Right mouse button
+                self.destroy_action()
+
 
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         # Calculate the scaled camera position
@@ -149,6 +197,16 @@ class Block:
             screen.blit(ss_sprite, ((self.worldx + camX),
                                     ((self.worldy + camY))
                                     ))
+
+            # Highlight the block if selected
+            if self.selected:
+                highlight_rect = pygame.Rect(
+                    self.worldx + camX,
+                    self.worldy + camY,
+                    self.block_size * base_tile_size_x,
+                    self.block_size * base_tile_size_y
+                )
+                pygame.draw.rect(screen, (255, 255, 0), highlight_rect, 3)  # Yellow border
 
 
 class Player:
