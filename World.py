@@ -13,6 +13,9 @@ class Block:
     worldx = 0
     worldy = 0
 
+    grid_x = 0
+    grid_y = 0
+
     placing = True
     def __init__(self, size, sprite: Surface, graphic_handler: Handler):
         self.size = size * 16
@@ -112,12 +115,16 @@ class Block:
             mouse = pygame.mouse.get_pos()
 
             # Convert mouse position to world space
-            world_mouse_x = (mouse[0] / scale_factor) + camX
-            world_mouse_y = (mouse[1] / scale_factor) + camY
+            world_mouse_x = (mouse[0] / scale_factor) - camX + ss_sprite.get_rect().width
+            world_mouse_y = (mouse[1] / scale_factor) - camY + ss_sprite.get_rect().height
 
             # Snap to the grid in world space, using the scaled base_tile_size for X and Y
-            snapped_world_x = (world_mouse_x // base_tile_size_x) * base_tile_size_x - (ss_sprite.get_rect().width / 2)
-            snapped_world_y = (world_mouse_y // base_tile_size_y) * base_tile_size_y - (ss_sprite.get_rect().height / 2)
+            snapped_world_x = (world_mouse_x // base_tile_size_x) * base_tile_size_x - ss_sprite.get_rect().width
+            snapped_world_y = (world_mouse_y // base_tile_size_y) * base_tile_size_y - ss_sprite.get_rect().height
+
+            # Store the snapped position in grid coordinates
+            self.grid_x = snapped_world_x // base_tile_size_x
+            self.grid_y = snapped_world_y // base_tile_size_y
 
             # Create a copy of the sprite for transparency and tinting
             placing_sprite = ss_sprite.copy()
@@ -130,12 +137,18 @@ class Block:
             placing_sprite.fill(tint_color, special_flags=pygame.BLEND_RGBA_MULT)  # Apply tint
 
             # Render the snapped sprite with transparency and tint
-            screen.blit(placing_sprite, (snapped_world_x - camX, snapped_world_y - camY))
+            screen.blit(placing_sprite, (snapped_world_x + camX, snapped_world_y + camY))
             self.worldx, self.worldy = snapped_world_x, snapped_world_y
         else:
+
+            # Recalculate world position based on current resolution
+            self.worldx = self.grid_x * base_tile_size_x
+            self.worldy = self.grid_y * base_tile_size_y
+
             # Render the sprite at its current world position
             screen.blit(ss_sprite, ((self.worldx + camX),
-                                    ((self.worldy + camY))))
+                                    ((self.worldy + camY))
+                                    ))
 
 
 class Player:
