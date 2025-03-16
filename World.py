@@ -18,26 +18,25 @@ class Block:
     grid_x = 0
     grid_y = 0
 
-    placing = True
-    selected = False
-
-    build_progress = 0  # Current progress in building the block
-    is_built = False  # Whether the block is fully built
-
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
                  outline_thickness=1, stripe_width=10, stripe_speed=1):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
         self.graphic_handler = graphic_handler
-
-        # Load sound effects
         self.build_time = build_time  # Total time required to build the block
-        self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")  # Replace with your sound file
-        self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")  # Replace with your sound file
-        self.hitboxes = []
 
-        # Create a mask for the diamond reveal effect
+        self.build_progress = 0  # Current progress in building the block
+        self.is_built = False  # Whether the block is fully built
+        self.build_playing = False # Whether is the build_sound is still playing
+        self.placing = True
+        self.selected = False
+        # Load sound effects
+        self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")
+        self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")
+        self.build_sound = pygame.mixer.Sound("assets/sounds/build.ogg")
+
+        self.hitboxes = []
         # Scale the sprite based on the current window size
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (
@@ -129,6 +128,11 @@ class Block:
 
     def destroy_action(self):
         World.Blocks.remove(self)  # Remove the block from the list
+
+        # Stop the sound effect
+        self.build_playing = False
+        self.build_sound.stop()
+
         self.break_sound.play()  # Play the place sound effect
 
     def generate_spiral_coordinates(self, n):
@@ -204,8 +208,20 @@ class Block:
         """
         if not self.is_built:
             self.build_progress += dt  # Increase build progress by the elapsed time
+
+            # Start playing the sound effect if it's not already playing
+            if not self.build_playing:
+                self.build_sound.play(-1)  # Loop indefinitely
+                self.build_playing = True
+
             if self.build_progress >= self.build_time:
                 self.is_built = True  # Mark the block as fully built
+
+                # Stop the sound effect
+                self.build_playing = False
+                self.build_sound.stop()
+
+
 
         # Update the animation offset
         self.animation_offset += self.stripe_speed * dt
@@ -379,6 +395,8 @@ class Block:
                 inverted_mask.blit(self.mask_surface, (0, 0),
                                    special_flags=pygame.BLEND_RGBA_SUB)  # Subtract the diamond
 
+
+
                 # Create a copy of the sprite
                 masked_sprite = self.sprite.copy()
 
@@ -388,6 +406,14 @@ class Block:
                 # Render the masked sprite
                 screen.blit(masked_sprite, ((self.worldx + camX),
                                             ((self.worldy + camY))))
+                # Draw the diamond outline directly on the screen
+                screen_diamond_points = [
+                    (self.worldx + camX + self.sprite.get_width() // 2, self.worldy + camY + self.sprite.get_height() // 2 - diamond_size),  # Top
+                    (self.worldx + camX + self.sprite.get_width() // 2 + diamond_size, self.worldy + camY + self.sprite.get_height() // 2),  # Right
+                    (self.worldx + camX + self.sprite.get_width() // 2, self.worldy + camY + self.sprite.get_height() // 2 + diamond_size),  # Bottom
+                    (self.worldx + camX + self.sprite.get_width() // 2 - diamond_size, self.worldy + camY + self.sprite.get_height() // 2)   # Left
+                ]
+                pygame.draw.polygon(screen, (255, 255, 0), screen_diamond_points, 2)  # Yellow outline
 
                 # Render the moving diagonal warning stripes, masked onto the outline
                 self.render_diagonal_warning_stripes(screen, camX, camY)
