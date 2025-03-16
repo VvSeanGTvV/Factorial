@@ -19,7 +19,7 @@ class Block:
     grid_y = 0
 
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
-                 outline_thickness=1, stripe_width=10, stripe_speed=1):
+                 outline_thickness=1, stripe_width=15, stripe_speed=1):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
@@ -221,8 +221,6 @@ class Block:
                 self.build_playing = False
                 self.build_sound.stop()
 
-
-
         # Update the animation offset
         self.animation_offset += self.stripe_speed * dt
         self.animation_offset %= self.stripe_width * 2  # Wrap around to create a seamless loop
@@ -322,6 +320,30 @@ class Block:
         screen.blit(masked_stripes, ((self.worldx + camX),
                                      ((self.worldy + camY))))
 
+    def render_diamond_outline(self, screen, camX, camY, diamond_points):
+        """
+        Render the diamond outline, clipped to the sprite's bounds.
+        """
+        # Create a surface for the outline
+        outline_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        outline_surface.fill((0, 0, 0, 0))  # Transparent surface
+
+        # Draw the diamond outline on the outline surface
+        pygame.draw.polygon(outline_surface, (255, 255, 0), diamond_points, 3)  # Yellow outline
+
+        # Create a mask from the sprite's alpha channel
+        mask = pygame.mask.from_surface(self.sprite)
+        mask_surface = mask.to_surface(setcolor=(255, 255, 255, 255), unsetcolor=(0, 0, 0, 0))
+
+        # Apply the mask to the outline surface
+        clipped_outline = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        clipped_outline.fill((0, 0, 0, 0))  # Transparent surface
+        clipped_outline.blit(outline_surface, (0, 0))
+        clipped_outline.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+        # Render the clipped outline
+        screen.blit(clipped_outline, (self.worldx + camX, self.worldy + camY))
+
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         # Calculate the scaled camera position
         camX = cam_pos.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
@@ -413,7 +435,8 @@ class Block:
                     (self.worldx + camX + self.sprite.get_width() // 2, self.worldy + camY + self.sprite.get_height() // 2 + diamond_size),  # Bottom
                     (self.worldx + camX + self.sprite.get_width() // 2 - diamond_size, self.worldy + camY + self.sprite.get_height() // 2)   # Left
                 ]
-                pygame.draw.polygon(screen, (255, 255, 0), screen_diamond_points, 2)  # Yellow outline
+                # Render the diamond outline, clipped to the sprite's bounds
+                self.render_diamond_outline(screen, camX, camY, diamond_points)
 
                 # Render the moving diagonal warning stripes, masked onto the outline
                 self.render_diagonal_warning_stripes(screen, camX, camY)
