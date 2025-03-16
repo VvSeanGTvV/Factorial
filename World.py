@@ -21,10 +21,11 @@ class Block:
     placing = True
     selected = False
 
-
     build_progress = 0  # Current progress in building the block
     is_built = False  # Whether the block is fully built
-    def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler):
+
+    def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
+                 outline_thickness=1, stripe_width=10, stripe_speed=1):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
@@ -39,11 +40,51 @@ class Block:
         # Create a mask for the diamond reveal effect
         # Scale the sprite based on the current window size
         self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+            int(self.size * (
+                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (
+                        self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+
+        # Warning strip configuration
+        self.stripe_width = stripe_width  # Width of each stripe
+        self.stripe_speed = stripe_speed  # Speed of the animation (pixels per second)
+        self.stripes_texture = self.create_diagonal_stripes_texture()
 
         self.mask_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
         self.mask_surface.fill((0, 0, 0, 0))  # Transparent surface
+
+        # Precompute the outline surface
+        # Outline configuration
+        self.outline_color = outline_color  # Yellow by default
+        self.outline_thickness = outline_thickness  # Thickness of the outline
+        self.outline_surface = self.precompute_outline()
+
+        # Animation properties
+        self.animation_offset = 0  # Tracks the diagonal offset of the stripes
+
+    def create_diagonal_stripes_texture(self):
+        """
+        Create a texture with diagonal alternating yellow and transparent stripes.
+        """
+        # Create a surface for the stripes texture
+        texture_size = max(self.sprite.get_width(), self.sprite.get_height()) * 2  # Large enough to cover diagonal movement
+        stripes_texture = pygame.Surface((texture_size, texture_size), pygame.SRCALPHA)
+        stripes_texture.fill((0, 0, 0, 0))  # Transparent surface
+
+        # Draw diagonal yellow stripes
+        stripe_angle = 45  # Angle of the stripes (45 degrees for diagonal)
+        stripe_spacing = self.stripe_width * 2  # Space between stripes
+        for i in range(-texture_size, texture_size * 2, stripe_spacing):
+            # Calculate the start and end points of the stripe
+            start_x = i
+            start_y = 0
+            end_x = i + texture_size * math.tan(math.radians(stripe_angle))
+            end_y = texture_size
+
+            # Draw the stripe
+            pygame.draw.line(stripes_texture, (255, 255, 0), (start_x, start_y), (end_x, end_y), self.stripe_width)
+
+        return stripes_texture
 
     def is_within_hitbox(self, Build):
         """
@@ -73,7 +114,8 @@ class Block:
         coordinates = self.generate_spiral_coordinates(self.block_size)
         # self.hitboxes.append(Vector2(self.worldx, self.worldy))
         for coord in coordinates:
-            tile_x, tile_y = (coord * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)) * 16
+            tile_x, tile_y = (coord * (
+                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)) * 16
             self.hitboxes.append(Vector2(math.floor(self.worldx + tile_x), math.floor(self.worldy + tile_y)))
 
     def place_action(self):
@@ -125,8 +167,10 @@ class Block:
         camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Calculate the base tile size for X and Y axes independently
-        base_tile_size_x = 16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
-        base_tile_size_y = 16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+        base_tile_size_x = 16 * (
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size_y = 16 * (
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Recalculate the block's screen position
         screen_x = self.worldx + camX
@@ -147,7 +191,7 @@ class Block:
                 if self.selected:
                     print("Block selected!")
                 else:
-                    print("Block deselected!") # TODO do something
+                    print("Block deselected!")  # TODO do something
 
             # Right-click: Destroy the block
             elif pygame.mouse.get_pressed()[2]:  # Right mouse button
@@ -163,30 +207,104 @@ class Block:
             if self.build_progress >= self.build_time:
                 self.is_built = True  # Mark the block as fully built
 
-    def draw_sprite_outline(self, screen, camX, camY):
-        """
-        Draw an outline around the sprite's visible pixels.
-        """
-        # Create a mask from the sprite
-        sprite_mask = pygame.mask.from_surface(self.sprite)
+        # Update the animation offset
+        self.animation_offset += self.stripe_speed * dt
+        self.animation_offset %= self.stripe_width * 2  # Wrap around to create a seamless loop
 
+    def precompute_outline(self):
+        """
+        Precompute the outline of the sprite and save it to a surface.
+        """
         # Create a surface for the outline
         outline_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
         outline_surface.fill((0, 0, 0, 0))  # Transparent surface
 
-        # Draw the outline by checking adjacent pixels
-        for x in range(self.sprite.get_width()):
-            for y in range(self.sprite.get_height()):
-                if sprite_mask.get_at((x, y)):  # If the pixel is part of the sprite
-                    # Check adjacent pixels
-                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                        if not sprite_mask.get_at((x + dx, y + dy)):  # If the adjacent pixel is transparent
-                            pygame.draw.rect(outline_surface, (255, 255, 0), (x, y, 1, 1))  # Draw a yellow pixel
+        # Get the sprite's pixels as a 2D array of colors
+        sprite_pixels = pygame.surfarray.array3d(self.sprite)
+        sprite_width, sprite_height = self.sprite.get_size()
 
-        # Render the outline surface
-        screen.blit(outline_surface, ((self.worldx + camX),
-                                      ((self.worldy + camY))))
+        # Create a visited mask to track processed pixels
+        visited = [[False for _ in range(sprite_height)] for _ in range(sprite_width)]
 
+        # Define directions for checking adjacent pixels
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        # Iterate through each pixel in the sprite
+        for x in range(sprite_width):
+            for y in range(sprite_height):
+                if not visited[x][y]:  # If the pixel hasn't been processed
+                    # Get the current pixel's color
+                    current_color = tuple(sprite_pixels[x][y])
+
+                    # Skip transparent pixels (assuming transparency is black or (0, 0, 0))
+                    if current_color == (0, 0, 0):
+                        continue
+
+                    # Perform flood-fill to find all adjacent pixels of the same color
+                    region = []
+                    stack = [(x, y)]
+                    while stack:
+                        cx, cy = stack.pop()
+                        if not visited[cx][cy]:
+                            visited[cx][cy] = True
+                            region.append((cx, cy))
+
+                            # Check adjacent pixels
+                            for dx, dy in directions:
+                                adj_x = cx + dx
+                                adj_y = cy + dy
+                                if 0 <= adj_x < sprite_width and 0 <= adj_y < sprite_height:
+                                    if tuple(sprite_pixels[adj_x][adj_y]) == current_color:
+                                        stack.append((adj_x, adj_y))
+
+                    # Draw an outline around the region with the configured color and thickness
+                    for px, py in region:
+                        for dx, dy in directions:
+                            adj_x = px + dx
+                            adj_y = py + dy
+                            if 0 <= adj_x < sprite_width and 0 <= adj_y < sprite_height:
+                                if tuple(sprite_pixels[adj_x][adj_y]) != current_color:
+                                    # Draw the outline with the configured thickness
+                                    for i in range(self.outline_thickness):
+                                        pygame.draw.rect(outline_surface, self.outline_color,
+                                                         (px - i, py - i, 1 + 2 * i, 1 + 2 * i), 1)
+                            else:
+                                # Draw the outline with the configured thickness
+                                for i in range(self.outline_thickness):
+                                    pygame.draw.rect(outline_surface, self.outline_color,
+                                                     (px - i, py - i, 1 + 2 * i, 1 + 2 * i), 1)
+
+        return outline_surface
+
+    def render_diagonal_warning_stripes(self, screen, camX, camY):
+        """
+        Render the moving diagonal warning stripes, masked onto the outline.
+        """
+        # Create a surface for the stripes
+        stripes_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        stripes_surface.fill((0, 0, 0, 0))  # Transparent surface
+
+        # Calculate the diagonal offset for the animation
+        offset = int(self.animation_offset)
+
+        # Draw the stripes texture repeatedly to cover the entire surface
+        for i in range(-offset, self.sprite.get_width() + self.sprite.get_height(), self.stripe_width * 2):
+            # Calculate the position of the stripe
+            stripe_x = i
+            stripe_y = 0
+
+            # Draw the stripe
+            stripes_surface.blit(self.stripes_texture, (stripe_x, stripe_y), special_flags=pygame.BLEND_RGBA_ADD)
+
+        # Apply the outline as a mask to the stripes
+        masked_stripes = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        masked_stripes.fill((0, 0, 0, 0))  # Transparent surface
+        masked_stripes.blit(self.outline_surface, (0, 0))  # Draw the outline
+        masked_stripes.blit(stripes_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)  # Clip the stripes to the outline
+
+        # Render the masked stripes
+        screen.blit(masked_stripes, ((self.worldx + camX),
+                                     ((self.worldy + camY))))
 
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         # Calculate the scaled camera position
@@ -194,8 +312,10 @@ class Block:
         camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Calculate the base tile size for X and Y axes independently
-        base_tile_size_x = 16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
-        base_tile_size_y = 16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+        base_tile_size_x = 16 * (
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size_y = 16 * (
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Supersample the sprite for better quality
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
@@ -249,14 +369,15 @@ class Block:
                     (self.sprite.get_width() // 2, self.sprite.get_height() // 2 - diamond_size),  # Top
                     (self.sprite.get_width() // 2 + diamond_size, self.sprite.get_height() // 2),  # Right
                     (self.sprite.get_width() // 2, self.sprite.get_height() // 2 + diamond_size),  # Bottom
-                    (self.sprite.get_width() // 2 - diamond_size, self.sprite.get_height() // 2)   # Left
+                    (self.sprite.get_width() // 2 - diamond_size, self.sprite.get_height() // 2)  # Left
                 ]
                 pygame.draw.polygon(self.mask_surface, (255, 255, 255, 255), diamond_points)  # White diamond
 
                 # Create an inverted mask surface
                 inverted_mask = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
                 inverted_mask.fill((255, 255, 255, 255))  # Fully opaque
-                inverted_mask.blit(self.mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)  # Subtract the diamond
+                inverted_mask.blit(self.mask_surface, (0, 0),
+                                   special_flags=pygame.BLEND_RGBA_SUB)  # Subtract the diamond
 
                 # Create a copy of the sprite
                 masked_sprite = self.sprite.copy()
@@ -268,8 +389,8 @@ class Block:
                 screen.blit(masked_sprite, ((self.worldx + camX),
                                             ((self.worldy + camY))))
 
-                # Draw the sprite outline
-                #self.draw_sprite_outline(screen, camX, camY)
+                # Render the moving diagonal warning stripes, masked onto the outline
+                self.render_diagonal_warning_stripes(screen, camX, camY)
             else:
                 # Render the fully built sprite
                 screen.blit(self.sprite, ((self.worldx + camX),

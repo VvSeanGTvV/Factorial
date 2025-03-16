@@ -170,10 +170,10 @@ while running:
             velY -= speed * delta
 
         if keys[pygame.K_1]:
-            placing = Block(2, pygame.image.load("assets/command-center.png"), 60, graphic_handler)
+            placing = Block(2, pygame.image.load("assets/command-center.png"), 120, graphic_handler)
 
         if keys[pygame.K_2]:
-            placing = Block(1, pygame.image.load("assets/stone-melter.png"), 30, graphic_handler)
+            placing = Block(1, pygame.image.load("assets/stone-melter.png"), 60, graphic_handler)
 
         if pygame.mouse.get_pressed()[0]:
             if isinstance(placing, Block):
