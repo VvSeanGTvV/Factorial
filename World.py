@@ -20,16 +20,30 @@ class Block:
 
     placing = True
     selected = False
-    def __init__(self, size, sprite: Surface, graphic_handler: Handler):
+
+
+    build_progress = 0  # Current progress in building the block
+    is_built = False  # Whether the block is fully built
+    def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
         self.graphic_handler = graphic_handler
 
         # Load sound effects
+        self.build_time = build_time  # Total time required to build the block
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")  # Replace with your sound file
         self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")  # Replace with your sound file
         self.hitboxes = []
+
+        # Create a mask for the diamond reveal effect
+        # Scale the sprite based on the current window size
+        self.sprite = pygame.transform.scale(self.sprite, (
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+
+        self.mask_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        self.mask_surface.fill((0, 0, 0, 0))  # Transparent surface
 
     def is_within_hitbox(self, Build):
         """
@@ -129,7 +143,6 @@ class Block:
         # Check if the mouse click is within the block's Rect
         if block_rect.collidepoint(mouse_pos):
             if pygame.mouse.get_pressed()[0]:  # Left mouse button
-                print(f"Block clicked at grid position: ({self.grid_x}, {self.grid_y})")
                 self.selected = not self.selected  # Toggle selection
                 if self.selected:
                     print("Block selected!")
@@ -140,6 +153,40 @@ class Block:
             elif pygame.mouse.get_pressed()[2]:  # Right mouse button
                 self.destroy_action()
 
+    def update(self, dt):
+        """
+        Update the block's build progress.
+        :param dt: Time elapsed since the last update (in seconds).
+        """
+        if not self.is_built:
+            self.build_progress += dt  # Increase build progress by the elapsed time
+            if self.build_progress >= self.build_time:
+                self.is_built = True  # Mark the block as fully built
+
+    def draw_sprite_outline(self, screen, camX, camY):
+        """
+        Draw an outline around the sprite's visible pixels.
+        """
+        # Create a mask from the sprite
+        sprite_mask = pygame.mask.from_surface(self.sprite)
+
+        # Create a surface for the outline
+        outline_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        outline_surface.fill((0, 0, 0, 0))  # Transparent surface
+
+        # Draw the outline by checking adjacent pixels
+        for x in range(self.sprite.get_width()):
+            for y in range(self.sprite.get_height()):
+                if sprite_mask.get_at((x, y)):  # If the pixel is part of the sprite
+                    # Check adjacent pixels
+                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        if not sprite_mask.get_at((x + dx, y + dy)):  # If the adjacent pixel is transparent
+                            pygame.draw.rect(outline_surface, (255, 255, 0), (x, y, 1, 1))  # Draw a yellow pixel
+
+        # Render the outline surface
+        screen.blit(outline_surface, ((self.worldx + camX),
+                                      ((self.worldy + camY))))
+
 
     def render(self, screen, cam_pos: Vector2, scale_factor=1):
         # Calculate the scaled camera position
@@ -149,11 +196,6 @@ class Block:
         # Calculate the base tile size for X and Y axes independently
         base_tile_size_x = 16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
         base_tile_size_y = 16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
-
-        # Scale the sprite based on the current window size
-        self.sprite = pygame.transform.scale(self.sprite, (
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
-            int(self.size * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         # Supersample the sprite for better quality
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
@@ -194,9 +236,44 @@ class Block:
             self.worldy = self.grid_y * base_tile_size_y
 
             # Render the sprite at its current world position
-            screen.blit(ss_sprite, ((self.worldx + camX),
-                                    ((self.worldy + camY))
-                                    ))
+            if not self.is_built:
+                # Calculate the progress ratio (0 to 1)
+                progress_ratio = self.build_progress / self.build_time
+
+                # Clear the mask surface
+                self.mask_surface.fill((0, 0, 0, 0))
+
+                # Draw the diamond shape on the mask surface
+                diamond_size = int((1 - progress_ratio) * self.sprite.get_width())
+                diamond_points = [
+                    (self.sprite.get_width() // 2, self.sprite.get_height() // 2 - diamond_size),  # Top
+                    (self.sprite.get_width() // 2 + diamond_size, self.sprite.get_height() // 2),  # Right
+                    (self.sprite.get_width() // 2, self.sprite.get_height() // 2 + diamond_size),  # Bottom
+                    (self.sprite.get_width() // 2 - diamond_size, self.sprite.get_height() // 2)   # Left
+                ]
+                pygame.draw.polygon(self.mask_surface, (255, 255, 255, 255), diamond_points)  # White diamond
+
+                # Create an inverted mask surface
+                inverted_mask = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+                inverted_mask.fill((255, 255, 255, 255))  # Fully opaque
+                inverted_mask.blit(self.mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)  # Subtract the diamond
+
+                # Create a copy of the sprite
+                masked_sprite = self.sprite.copy()
+
+                # Apply the inverted mask to the sprite
+                masked_sprite.blit(inverted_mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+                # Render the masked sprite
+                screen.blit(masked_sprite, ((self.worldx + camX),
+                                            ((self.worldy + camY))))
+
+                # Draw the sprite outline
+                #self.draw_sprite_outline(screen, camX, camY)
+            else:
+                # Render the fully built sprite
+                screen.blit(self.sprite, ((self.worldx + camX),
+                                          ((self.worldy + camY))))
 
             # Highlight the block if selected
             if self.selected:
