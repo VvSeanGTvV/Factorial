@@ -17,9 +17,8 @@ class Block:
 
     grid_x = 0
     grid_y = 0
-
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
-                 outline_thickness=1, stripe_width=15, stripe_speed=1):
+                 outline_thickness=1, stripe_width=17, stripe_speed=1):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
@@ -31,12 +30,14 @@ class Block:
         self.build_playing = False # Whether is the build_sound is still playing
         self.placing = True
         self.selected = False
+
         # Load sound effects
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")
         self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")
         self.build_sound = pygame.mixer.Sound("assets/sounds/build.ogg")
 
         self.hitboxes = []
+
         # Scale the sprite based on the current window size
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (

@@ -247,8 +247,8 @@ while running:
 
         settings_button.render(window.display, Vector2(game_width - 60, 0))
         settings_button.update()
-        pygame.mixer.music.stop()
-
+        if pygame.mixer.music.get_busy():
+            pygame.mixer.music.stop()
     else:
         window.display.fill((0, 0, 0))
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
