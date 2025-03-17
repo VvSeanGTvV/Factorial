@@ -137,7 +137,6 @@ class Block:
 
         if self.check_placement():
             Blocks.append(self)
-            self.place_sound.play()  # Play the place sound effect
 
     def destroy_action(self):
         World.Blocks.remove(self)  # Remove the block from the list
@@ -233,6 +232,8 @@ class Block:
                 # Stop the sound effect
                 self.build_playing = False
                 self.build_sound.stop()
+
+                self.place_sound.play()  # Play the place sound effect
 
         # Update the animation offset
         self.animation_offset += self.stripe_speed * dt

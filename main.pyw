@@ -57,7 +57,7 @@ def close():
     sys.exit()
 
 
-build = 8  # BUILD VERSION
+build = 9  # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 512, graphic_handler, 8)
@@ -113,6 +113,7 @@ stat_button = Button(TextSprite('raster.ttf', 16,
                                 (255, 255, 255), graphic_handler
                                 ), 120, 20, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: toggle_stats()
                      )
+option_button = [quit_button, desktop_button_settings, stat_button]
 
 ### MENU BUTTONS
 play_button = Button(TextSprite('raster.ttf', 16,
@@ -124,8 +125,9 @@ play_button = Button(TextSprite('raster.ttf', 16,
 desktop_button = Button(TextSprite('raster.ttf', 16,
                                    f"QUIT GAME", False,
                                    (255, 255, 255), graphic_handler
-                                   ), 120 * 2, 20 * 2, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: close()
+                                   ), 120 * 3, 20 * 2, (50, 50, 50), (205, 205, 205), (125, 125, 125), lambda: close()
                         )
+menu_button = [play_button, desktop_button]
 
 testText = TextSprite('raster.ttf', 16,
                       f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | "
@@ -134,12 +136,16 @@ testText = TextSprite('raster.ttf', 16,
                       )
 
 title = TextSprite('bluescreen.ttf', 50,
-                   "FACTORIAL", False,
+                   "F A C T O R I A L", False,
                    (0, 255, 255), graphic_handler
                    )
+title_shadow = TextSprite('bluescreen.ttf', 50,
+                   "F A C T O R I A L", False,
+                   (0, 255/8, 255/6), graphic_handler
+                          )
 
-version = TextSprite('raster.ttf', 12,
-                     f"b{build} [BUILD {sys.platform}]", False,
+version = TextSprite('aeogo.ttf', 12,
+                     f"b{build} [{sys.platform} BUILD]", False,
                      (0, 255, 255), graphic_handler
                      )
 placing = None
@@ -237,13 +243,10 @@ while running:
         testText.draw_text(window.display, Vector2(16, 16))
         if options_opened:
             quit_button.render(window.display, Vector2(game_width - 60, 10))
-            quit_button.update()
-
             desktop_button_settings.render(window.display, Vector2(game_width - 60, 20))
-            desktop_button_settings.update()
-
             stat_button.render(window.display, Vector2(game_width - 60, 30))
-            stat_button.update()
+            for option_but in option_button:
+                option_but.update()
 
         settings_button.render(window.display, Vector2(game_width - 60, 0))
         settings_button.update()
@@ -251,14 +254,16 @@ while running:
             pygame.mixer.music.stop()
     else:
         window.display.fill((0, 0, 0))
+        title_shadow.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2 + 4, 36))
+
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
         version.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 86))
 
-        play_button.render(window.display, Vector2((game_width - (play_button.get_rect().width / 2)) / 2, 200))
-        play_button.update()
+        play_button.render(window.display, Vector2((game_width - (play_button.get_rect().width / 2)) / 2, 230))
+        desktop_button.render(window.display, Vector2((game_width - (desktop_button.get_rect().width / 2)) / 2, 260))
+        for menu_but in menu_button:
+            menu_but.update()
 
-        desktop_button.render(window.display, Vector2((game_width - (desktop_button.get_rect().width / 2)) / 2, 240))
-        desktop_button.update()
         if not pygame.mixer.music.get_busy():
             pygame.mixer.music.play(loops=-1)
 

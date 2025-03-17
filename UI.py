@@ -4,7 +4,7 @@ from pygame.rect import RectType
 
 from Graphics import TextSprite
 
-
+Buttons = []
 class Button:
     pressed = False
 
@@ -20,6 +20,7 @@ class Button:
         self.button_position = Vector2(0, 0)
 
         self.position = Vector2(0, 0)
+        Buttons.append(self)
 
     def update(self):
         scaleX, scaleY = self.text.graphic_handler.getWindowScale()
