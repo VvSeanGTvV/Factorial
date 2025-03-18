@@ -126,38 +126,21 @@ class Block:
         Automatically generate hitboxes for the object based on spiral coordinates.
         Ensures blocks cannot be built on top of it.
         """
-        # Clear existing hitboxes
-        self.hitboxes.clear()
+        # Calculate the base tile size for X and Y axes independently
+        base_tile_size_x = 16 * (
+                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        base_tile_size_y = 16 * (
+                self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
-        # Generate spiral coordinates (assuming this function works correctly)
-        coordinates = self.generate_spiral_coordinates(1)
+        self.hitboxes.append(
+            (
+                Vector2(self.worldx,
+                        self.worldy),
 
-        # Get the current display width and height for scaling
-        current_display_width = self.graphic_handler.curr_win.get_display().current_w
-        current_display_height = self.graphic_handler.curr_win.get_display().current_h
-        default_display_width = self.graphic_handler.curr_win.defX
-        default_display_height = self.graphic_handler.curr_win.defY
-
-        # Calculate the scaling factors
-        scaling_factor_x = current_display_width / default_display_width
-        scaling_factor_y = current_display_height / default_display_height
-
-        # Calculate the hitbox size (scaled)
-        hitbox_size_x = self.size * scaling_factor_x
-        hitbox_size_y = self.size * scaling_factor_y
-
-        # Iterate through the spiral coordinates
-        for coord in coordinates:
-            # Scale the coordinates correctly
-            tile_x = coord.x * self.size * scaling_factor_x
-            tile_y = coord.y * self.size * scaling_factor_y
-
-            # Place the hitbox at the block's top-left corner
-            hitbox_x = self.worldx + tile_x
-            hitbox_y = self.worldy + tile_y
-
-            # Add the hitbox relative to the object's world position
-            self.hitboxes.append((Vector2(hitbox_x, hitbox_y), (hitbox_size_x, hitbox_size_y)))
+                (self.block_size * base_tile_size_x,
+                self.block_size * base_tile_size_y)
+            )
+        )
 
     def place_action(self):
         if self.placing:
