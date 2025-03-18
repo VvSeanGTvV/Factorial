@@ -57,7 +57,7 @@ def close():
     sys.exit()
 
 
-build = 9  # BUILD VERSION
+build = 11  # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
 world = Map(window, 512, graphic_handler, 8)
