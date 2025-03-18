@@ -23,7 +23,7 @@ class Block:
         self.block_size = size
         self.sprite = sprite
         self.graphic_handler = graphic_handler
-        self.build_time = build_time  # Total time required to build the block
+        self.build_time = 60 * build_time  # Total time required to build the block
 
         self.build_progress = 0  # Current progress in building the block
         self.is_built = False  # Whether the block is fully built
@@ -89,16 +89,27 @@ class Block:
     def is_within_hitbox(self, Build):
         """
         Check if the current block overlaps with another block's hitboxes.
+
+        via by RECTTYPE
         """
         if not isinstance(Build, Block):
             return False  # Not a Block, no overlap
 
-        # Use set for faster lookups
-        self_hitbox_set = {(h.x, h.y) for h in self.hitboxes if isinstance(h, Vector2)}
-        build_hitbox_set = {(h.x, h.y) for h in Build.hitboxes if isinstance(h, Vector2)}
+        # Iterate through all hitboxes of the current block
+        for self_hitbox in self.hitboxes:
+            self_pos, self_size = self_hitbox
+            self_rect = pygame.Rect(self_pos.x, self_pos.y, self_size[0], self_size[1])
 
-        # Check for intersection
-        return not self_hitbox_set.isdisjoint(build_hitbox_set)
+            # Iterate through all hitboxes of the other block
+            for build_hitbox in Build.hitboxes:
+                build_pos, build_size = build_hitbox
+                build_rect = pygame.Rect(build_pos.x, build_pos.y, build_size[0], build_size[1])
+
+                # Check for intersection between the two rectangles
+                if self_rect.colliderect(build_rect):
+                    return True  # Overlap detected
+
+        return False  # No overlap detected
 
     def check_placement(self):
         for Build in Blocks:
@@ -119,19 +130,34 @@ class Block:
         self.hitboxes.clear()
 
         # Generate spiral coordinates (assuming this function works correctly)
-        coordinates = self.generate_spiral_coordinates(self.block_size)
+        coordinates = self.generate_spiral_coordinates(1)
+
+        # Get the current display width and height for scaling
+        current_display_width = self.graphic_handler.curr_win.get_display().current_w
+        current_display_height = self.graphic_handler.curr_win.get_display().current_h
+        default_display_width = self.graphic_handler.curr_win.defX
+        default_display_height = self.graphic_handler.curr_win.defY
+
+        # Calculate the scaling factors
+        scaling_factor_x = current_display_width / default_display_width
+        scaling_factor_y = current_display_height / default_display_height
+
+        # Calculate the hitbox size (scaled)
+        hitbox_size_x = self.size * scaling_factor_x
+        hitbox_size_y = self.size * scaling_factor_y
 
         # Iterate through the spiral coordinates
         for coord in coordinates:
             # Scale the coordinates correctly
-            tile_x = coord.x * (self.size / 2) * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
-            tile_y = coord.y * (self.size / 2) * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+            tile_x = coord.x * self.size * scaling_factor_x
+            tile_y = coord.y * self.size * scaling_factor_y
 
-            # Adjust the hitbox position to center it on the block
+            # Place the hitbox at the block's top-left corner
             hitbox_x = self.worldx + tile_x
             hitbox_y = self.worldy + tile_y
 
-            self.hitboxes.append(Vector2(hitbox_x, hitbox_y))
+            # Add the hitbox relative to the object's world position
+            self.hitboxes.append((Vector2(hitbox_x, hitbox_y), (hitbox_size_x, hitbox_size_y)))
 
     def place_action(self):
         if self.placing:
@@ -151,6 +177,9 @@ class Block:
         self.break_sound.play()  # Play the place sound effect
 
     def generate_spiral_coordinates(self, n):
+        """
+        Generate spiral coordinates for a block of size n x n.
+        """
         # Initialize the starting position and direction
         x, y = 0, 0
         dx, dy = 0, 1  # Start moving right
@@ -160,13 +189,14 @@ class Block:
 
         # Iterate through the spiral
         for _ in range(n * n):
-            coordinates.append(Vector2(x, y))  # Add the current position to the list
+            # Add the current position to the list
+            coordinates.append(Vector2(x, y))
 
             # Calculate the next position
             next_x, next_y = x + dx, y + dy
 
             # Check if the next position is out of bounds or already visited
-            if (abs(next_x) > n // 2 or abs(next_y) > n // 2 or (next_x, next_y) in coordinates):
+            if (abs(next_x) >= n // 2 + 1 or abs(next_y) >= n // 2 + 1 or (next_x, next_y) in coordinates):
                 # Change direction: right -> down -> left -> up -> right ...
                 dx, dy = dy, -dx
 
