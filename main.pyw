@@ -57,10 +57,10 @@ def close():
     sys.exit()
 
 
-build = 11  # BUILD VERSION
+build = 13  # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(0, 0)
-world = Map(window, 512, graphic_handler, 8)
+world = Map(window, 1024, graphic_handler, 8)
 
 options_opened = False
 show_stats = False
@@ -190,7 +190,7 @@ while running:
 
         if pygame.mouse.get_pressed()[0]:
             if isinstance(placing, Block):
-                placing.place_action()
+                placing.place_action(player)
                 placing = None
             else:
                 placing = None
@@ -238,7 +238,7 @@ while running:
         if len(World.Blocks) > 0:
             for block in World.Blocks:
                 block.render(window.display, camera.pos)
-                block.update(delta)
+                block.update(delta, camera.pos)
 
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)

@@ -17,6 +17,8 @@ class Block:
 
     grid_x = 0
     grid_y = 0
+
+    pos = Vector2(0, 0)
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
                  outline_thickness=1, stripe_width=17, stripe_speed=1):
         self.size = size * 16
@@ -30,6 +32,8 @@ class Block:
         self.build_playing = False # Whether is the build_sound is still playing
         self.placing = True
         self.selected = False
+
+        self.who = None # who built the block
 
         # Load sound effects
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")
@@ -137,18 +141,19 @@ class Block:
                 Vector2(self.worldx,
                         self.worldy),
 
-                (self.block_size * base_tile_size_x,
-                self.block_size * base_tile_size_y)
+                ((self.block_size * base_tile_size_x) - 2,
+                (self.block_size * base_tile_size_y) - 2)
             )
         )
 
-    def place_action(self):
+    def place_action(self, player):
         if self.placing:
             self.placing = False
             self.auto_hitbox()
 
         if self.check_placement():
             Blocks.append(self)
+            self.who = player
 
     def destroy_action(self):
         World.Blocks.remove(self)  # Remove the block from the list
@@ -229,20 +234,27 @@ class Block:
             elif pygame.mouse.get_pressed()[2]:  # Right mouse button
                 self.destroy_action()
 
-    def update(self, dt):
+    def update(self, dt, cam_pos):
         """
         Update the block's build progress.
         :param dt: Time elapsed since the last update (in seconds).
         """
+
+        # Calculate the scaled camera position
+        camX = cam_pos.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+
         if not self.is_built:
             self.build_progress += dt  # Increase build progress by the elapsed time
 
             # Start playing the sound effect if it's not already playing
+            self.who.face_towards(Vector2(self.get_world_position().x, self.get_world_position().y))
             if not self.build_playing:
                 self.build_sound.play(-1)  # Loop indefinitely
                 self.build_playing = True
 
             if self.build_progress >= self.build_time:
+                self.who.angle_to = 0
                 self.is_built = True  # Mark the block as fully built
 
                 # Stop the sound effect
@@ -497,6 +509,9 @@ class Player:
         self.graphic_handler = graphic_handler
         self.size = size
 
+        self.angle = 0
+        self.angle_to = 0
+
     def update_position(self, x, y):
         self.x = x
         self.y = y
@@ -511,6 +526,18 @@ class Player:
     def get_position(self):
         return self.worldx, self.worldy
 
+    def face_towards(self, target: Vector2):
+        """
+        Force the player to face towards a specific target position or direction vector.
+        :param target: A Vector2 representing the target position or direction.
+        """
+        # Calculate the direction vector from the player's position to the target
+        direction = target - Vector2(self.worldx, self.worldy)
+
+        # Calculate the angle in radians and convert it to degrees
+        angle_radians = math.atan2(-direction.y, direction.x)  # Negative y because pygame's y-axis is flipped
+        self.angle_to = math.degrees(angle_radians) - 90  # Add 90 to align with sprite's default orientation
+
     def render(self, screen, camX, camY, velocity: Vector2):
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (
@@ -519,11 +546,16 @@ class Player:
                     self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
+
+
         if velocity.x != 0 or velocity.y != 0:
-            angle = math.degrees(math.atan2(-velocity.y, velocity.x)) + 90
-            rotated_sprite = pygame.transform.rotate(ss_sprite, angle)
+            self.angle = math.degrees(math.atan2(-velocity.y, velocity.x)) + 90
         else:
             rotated_sprite = ss_sprite
+        if self.angle_to != 0:
+            self.angle = self.angle_to
+
+        rotated_sprite = pygame.transform.rotate(ss_sprite, self.angle)
 
         screen.blit(rotated_sprite, (
             self.x - camX - (rotated_sprite.get_rect().width // 2),
