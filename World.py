@@ -124,11 +124,14 @@ class Block:
         # Iterate through the spiral coordinates
         for coord in coordinates:
             # Scale the coordinates correctly
-            tile_x = coord.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX) * self.block_size
-            tile_y = coord.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY) * self.block_size
+            tile_x = coord.x * (self.size / 2) * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+            tile_y = coord.y * (self.size / 2) * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
-            # Add the hitbox relative to the object's world position
-            self.hitboxes.append(Vector2(math.floor(self.worldx + tile_x), math.floor(self.worldy + tile_y)))
+            # Adjust the hitbox position to center it on the block
+            hitbox_x = self.worldx + tile_x
+            hitbox_y = self.worldy + tile_y
+
+            self.hitboxes.append(Vector2(hitbox_x, hitbox_y))
 
     def place_action(self):
         if self.placing:
