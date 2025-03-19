@@ -59,7 +59,7 @@ def close():
 
 build = 13  # BUILD VERSION
 player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
-camera = Camera(0, 0)
+camera = Camera(game_width // 2, game_height // 2)
 world = Map(window, 1024, graphic_handler, 8)
 
 options_opened = False
@@ -196,8 +196,8 @@ while running:
                 placing = None
 
         camera.update_position(
-            Mathf.lerp(camera.pos.x, -player.worldx, delta / 25),
-            Mathf.lerp(camera.pos.y, -player.worldy, delta / 25)
+            Mathf.lerp(camera.pos.x, -(player.worldx - (screen_width // 2)), delta / 25),
+            Mathf.lerp(camera.pos.y, -(player.worldy - (screen_height // 2)), delta / 25)
         )
 
         px, py = player.get_position()

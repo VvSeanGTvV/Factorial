@@ -503,8 +503,8 @@ class Player:
     worldy = 0
 
     def __init__(self, x, y, sprite: Surface, size, graphic_handler: Handler):
-        self.x = x
-        self.y = y
+        self.worldx = x
+        self.worldy = y
         self.sprite = sprite
         self.graphic_handler = graphic_handler
         self.size = size
@@ -512,16 +512,11 @@ class Player:
         self.angle = 0
         self.angle_to = 0
 
-    def update_position(self, x, y):
-        self.x = x
-        self.y = y
+        self.cam_pos = Vector2(0, 0)
 
     def update_position_world(self, x, y):
         self.worldx = x
         self.worldy = y
-
-        windowSX, windowSY = self.graphic_handler.getActiveDisplaySize()
-        self.update_position(self.worldx + (windowSX // 2), self.worldy + (windowSY // 2))
 
     def get_position(self):
         return self.worldx, self.worldy
@@ -532,7 +527,8 @@ class Player:
         :param target: A Vector2 representing the target position or direction.
         """
         # Calculate the direction vector from the player's position to the target
-        direction = target - Vector2(self.worldx, self.worldy)
+        scale = Vector2(self.graphic_handler.getWindowScale())
+        direction = target - self.cam_pos
 
         # Calculate the angle in radians and convert it to degrees
         angle_radians = math.atan2(-direction.y, direction.x)  # Negative y because pygame's y-axis is flipped
@@ -558,9 +554,11 @@ class Player:
         rotated_sprite = pygame.transform.rotate(ss_sprite, self.angle)
 
         screen.blit(rotated_sprite, (
-            self.x - camX - (rotated_sprite.get_rect().width // 2),
-            self.y - camY - (rotated_sprite.get_rect().height // 2)
+            self.worldx - camX - (rotated_sprite.get_rect().width // 2),
+            self.worldy - camY - (rotated_sprite.get_rect().height // 2)
         ))
+
+        self.cam_pos = Vector2(camX, camY)
 
 
 class Map:
