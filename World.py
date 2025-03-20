@@ -747,9 +747,9 @@ class Map:
             for tile_data in chunk_tiles:
                 if len(tile_data["frames"]) > 1:  # Check if the tile is animated
                     # Update the animation frame if enough time has passed
-                    if self.animation_timer - tile_data["last_update"] > self.animation_frame_duration:
-                        tile_data["current_frame"] = (tile_data["current_frame"] + 1) % len(tile_data["frames"])
-                        tile_data["last_update"] = self.animation_timer
+                    current_frame = int(self.animation_timer * 1) % len(tile_data["frames"])
+                    tile_data["current_frame"] = current_frame
+                    tile_data["last_update"] = self.animation_timer
 
     def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""

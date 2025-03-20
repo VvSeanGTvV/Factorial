@@ -57,7 +57,7 @@ def close():
     sys.exit()
 
 
-build = 14  # BUILD VERSION
+build = 16  # BUILD VERSION
 scale = Vector2(screen_width / game_width, screen_height / game_height)
 player = Player(game_width, game_height, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(game_width // 2, game_height // 2)
@@ -280,10 +280,10 @@ while running:
         title_shadow.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2 + 4, 36))
 
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
-        version.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 86))
+        version.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2 + 20, 88))
 
-        play_button.render(window.display, Vector2((game_width - (play_button.get_rect().width / 2)) / 2, 230))
-        desktop_button.render(window.display, Vector2((game_width - (desktop_button.get_rect().width / 2)) / 2, 260))
+        play_button.render(window.display, Vector2((game_width - (play_button.get_rect().width / 2)) / 2, 260))
+        desktop_button.render(window.display, Vector2((game_width - (desktop_button.get_rect().width / 2)) / 2, 290))
         for menu_but in menu_button:
             menu_but.update()
 
