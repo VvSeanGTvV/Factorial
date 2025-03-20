@@ -40,6 +40,7 @@ class Block:
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")
         self.break_sound = pygame.mixer.Sound("assets/sounds/break.ogg")
         self.build_sound = pygame.mixer.Sound("assets/sounds/build.ogg")
+        self.build_sound.set_volume(0.25)
 
         self.hitboxes = []
 
@@ -565,6 +566,34 @@ class Player:
         self.cam_pos = Vector2(camX, camY)
 
 
+class Tile:
+
+    def preload_tiles(self, tile_set):
+        """Preloads tile images and stores them in a 1D list."""
+        return [pygame.image.load("assets/" + tile) for tile in tile_set]
+
+    def __init__(self, sprite_list: list[str], item=None, animated=False):
+        """
+        Tile, a class that has item drop and variantions sprite.
+        :param sprite_list: Creates a preloaded_tiles (more primarily in "assets/")
+        :param animated: if this Tile is animated (uses sprite_list as animation)
+        """
+
+        self.sprite_list = self.preload_tiles(sprite_list)
+        self.item = item
+        self.has_drop = item is not None
+        self.animation_frames = self.variants = len(self.sprite_list)
+
+        # USED FOR ANIMATED TILE
+        self.animated = animated
+        self.current_frame = 0
+
+    def get_sprite(self, variant):
+        return self.sprite_list[variant % self.variants]
+
+
+
+
 class Map:
     def __init__(self, window, seed, graphic_handler, chunk_size):
         """Creates a Map"""
@@ -589,30 +618,38 @@ class Map:
                 "name": "desert",
                 "temperature_range": (0.0, 0.33),
                 "humidity_range": (0.0, 0.5),
-                "tiles": self.preload_tiles(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"]),
+                "tile": Tile(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"]),
             },
             {
                 "name": "mountain",
                 "temperature_range": (0.0, 0.77),
                 "humidity_range": (0.0, 0.2),
-                "tiles": self.preload_tiles(["basalt1.png"]),
+                "tile": Tile(["basalt1.png"]),
             },
             {
                 "name": "grassland",
                 "temperature_range": (0.33, 0.66),
                 "humidity_range": (0.0, 0.5),
-                "tiles": self.preload_tiles(["grass1.png", "grass2.png"]),
+                "tile": Tile(["grass1.png", "grass2.png"]),
             },
             {
                 "name": "ocean",
                 "temperature_range": (0.33, 0.66),
                 "humidity_range": (0.5, 1.0),
-                "tiles": self.preload_tiles(["water1.png", "water2.png", "water3.png"]),
+                "tile": Tile(["water1.png", "water2.png", "water3.png"], animated=True),
             }
         ]
 
-        # Animation state
-        self.water_animation_frames = self.get_biome_rules("ocean")["tiles"]  # Ocean biome tiles
+        self.animated_tile_list = []
+        for biome in self.biome_rules:
+            biome_tile = biome["tile"]
+            if biome_tile.animated:
+                self.animated_tile_list.append({
+                    "name": biome["name"],
+                    "current_animation": 0,
+                    "total_frame": biome_tile.animation_frames
+                })
+
         self.current_animation_frame = 0
         self.last_animation_update = time.time()
         self.animation_frame_duration = 0.2  # Time between frames in seconds
@@ -656,10 +693,6 @@ class Map:
                 return biome
         return None
 
-    def preload_tiles(self, tile_set):
-        """Preloads tile images and stores them in a 1D list."""
-        return [pygame.image.load("assets/" + tile) for tile in tile_set]
-
     def get_biome(self, x, y):
         """Determine the biome for a given (x, y) coordinate."""
         # Generate noise values for temperature and humidity
@@ -686,11 +719,12 @@ class Map:
         biome = self.get_biome(x, y)
 
         # Get the list of tiles for the biome
-        biome_tiles = biome["tiles"]
+        biome_tile = biome["tile"]
 
         # If it's the ocean biome, return the current animation frame
-        if biome["name"] == "ocean":
-            return biome_tiles[self.current_animation_frame]
+        if biome_tile.animated:
+            animated_tile = self.animated_tile_list[biome["name"]]
+            return biome_tile.get_sprite(animated_tile["current_frame"])
 
         # For other biomes, use noise to select a tile
         noise_scale = 0.05  # Adjust this to control the "zoom" of the noise
@@ -700,15 +734,22 @@ class Map:
         normalized_noise = (noise_value + 1) / 2  # Convert [-1, 1] to [0, 1]
 
         # Map the normalized noise value to a tile index
-        tile_index = int(normalized_noise * len(biome_tiles))  # Scale to biome_tiles length
-        tile_index = max(0, min(tile_index, len(biome_tiles) - 1))  # Clamp to valid range
+        tile_index = int(normalized_noise * biome_tile.variants)  # Scale to biome_tiles length
+        tile_index = max(0, min(tile_index, biome_tile.variants - 1))  # Clamp to valid range
 
-        return biome_tiles[tile_index]  # Return the selected tile
+        return biome_tile.get_sprite(tile_index) # Return the selected tile
 
     def update_animation(self):
         """Updates the animation frame for water tiles."""
         self.animation_timer = self.animation_timer + self.graphic_handler.delta_target()
-        self.current_animation_frame = (math.floor(self.animation_timer * 2)) % len(self.water_animation_frames)
+        for chunk_coords in self.loaded_chunks:
+            chunk_tiles = self.loaded_chunks[chunk_coords]
+            for tile_data in chunk_tiles:
+                if len(tile_data["frames"]) > 1:  # Check if the tile is animated
+                    # Update the animation frame if enough time has passed
+                    if current_time - tile_data["last_update"] > self.animation_frame_duration:
+                        tile_data["current_frame"] = (tile_data["current_frame"] + 1) % len(tile_data["frames"])
+                        tile_data["last_update"] = current_time
 
     def load_chunk(self, chunk_x, chunk_y, tile_size):
         """Loads a chunk of tiles and caches them."""
@@ -717,21 +758,31 @@ class Map:
             for x in range(chunk_x * self.chunk_size, (chunk_x + 1) * self.chunk_size):
                 # Get the biome for the current tile
                 biome = self.get_biome(x, y)
+                biome_tile = biome["tile"]
 
-                # If it's the ocean biome, preload all animation frames
-                if biome["name"] == "ocean":
+                # If the tile is animated, preload all animation frames and initialize animation state
+                if biome_tile.animated:
                     tile_frames = []
-                    for frame in biome["tiles"]:
+                    for frame in biome_tile.sprite_list:
                         tile_sprite = pygame.transform.scale(frame, (tile_size, tile_size))
                         tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
                         tile_frames.append(tile_sprite)
-                    chunk_tiles.append(tile_frames)
+                    # Store the frames and the current animation state for this tile
+                    chunk_tiles.append({
+                        "frames": tile_frames,
+                        "current_frame": 0,  # Initialize animation state
+                        "last_update": time.time()  # Track the last time this tile's animation was updated
+                    })
                 else:
-                    # For non-ocean tiles, preload a single frame
+                    # For non-animated tiles, preload a single frame
                     tile_sprite = self.get_tile(x, y)
                     tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
                     tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
-                    chunk_tiles.append([tile_sprite])  # Store as a list for consistency
+                    chunk_tiles.append({
+                        "frames": [tile_sprite],  # Store as a list for consistency
+                        "current_frame": 0,  # Non-animated tiles only have one frame
+                        "last_update": None  # No animation state needed
+                    })
 
         self.loaded_chunks[(chunk_x, chunk_y)] = chunk_tiles
 
@@ -741,7 +792,8 @@ class Map:
             del self.loaded_chunks[(chunk_x, chunk_y)]
 
     def render(self, camX, camY, scale_factor=1):
-        # Update the animation frame
+        # Update the animation frame for all animated tiles
+
 
         # Define the base resolution (logical resolution)
         base_width = self.curr_win.defX
@@ -806,14 +858,10 @@ class Map:
                     ):
                         # Get the tile from the chunk
                         tile_index = (y - chunk_y * self.chunk_size) * self.chunk_size + (x - chunk_x * self.chunk_size)
-                        tile_frames = self.loaded_chunks[chunk_coords][tile_index]
+                        tile_data = self.loaded_chunks[chunk_coords][tile_index]
 
-                        # For ocean tiles, use the current animation frame
-                        if len(tile_frames) > 1:
-                            tile_sprite = tile_frames[self.current_animation_frame]
-                        else:
-                            tile_sprite = tile_frames[0]
-
+                        # Use the tile's current animation frame
+                        tile_sprite = tile_data["frames"][tile_data["current_frame"]]
                         batch_tiles.append((tile_sprite, (render_x, render_y)))
 
         # Clear the scaled surface

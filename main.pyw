@@ -156,7 +156,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN and in_game:
             mouse_pos = pygame.mouse.get_pos()
             for block in World.Blocks:  # Assuming `blocks` is a list of all blocks
                 block.handle_mouse_click(mouse_pos, camera.pos)
@@ -264,9 +264,19 @@ while running:
     else:
         window.display.fill((0, 0, 0))
 
-        world.update_animation()
+        # WORLD RENDER LAYER
         world.render(0, 0)
 
+        # BLOCK RENDER LAYER
+        if len(World.Blocks) > 0:
+            for block in World.Blocks:
+                block.render(window.display, Vector2(0, 0))
+
+                # Stop the sound effect
+                block.build_playing = False
+                block.build_sound.stop()
+
+        # TITLE RENDER LAYER
         title_shadow.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2 + 4, 36))
 
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
