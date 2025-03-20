@@ -19,6 +19,7 @@ class Block:
     grid_y = 0
 
     pos = Vector2(0, 0)
+
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
                  outline_thickness=1, stripe_width=17, stripe_speed=1):
         self.size = size * 16
@@ -29,11 +30,11 @@ class Block:
 
         self.build_progress = 0  # Current progress in building the block
         self.is_built = False  # Whether the block is fully built
-        self.build_playing = False # Whether is the build_sound is still playing
+        self.build_playing = False  # Whether is the build_sound is still playing
         self.placing = True
         self.selected = False
 
-        self.who = None # who built the block
+        self.who = None  # who built the block
 
         # Load sound effects
         self.place_sound = pygame.mixer.Sound("assets/sounds/place.ogg")
@@ -45,9 +46,9 @@ class Block:
         # Scale the sprite based on the current window size
         self.sprite = pygame.transform.scale(self.sprite, (
             int(self.size * (
-                        self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
             int(self.size * (
-                        self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         # Warning strip configuration
         self.stripe_width = stripe_width  # Width of each stripe
@@ -71,7 +72,8 @@ class Block:
         Create a texture with diagonal alternating yellow and transparent stripes.
         """
         # Create a surface for the stripes texture
-        texture_size = max(self.sprite.get_width(), self.sprite.get_height()) * 2  # Large enough to cover diagonal movement
+        texture_size = max(self.sprite.get_width(),
+                           self.sprite.get_height()) * 2  # Large enough to cover diagonal movement
         stripes_texture = pygame.Surface((texture_size, texture_size), pygame.SRCALPHA)
         stripes_texture.fill((0, 0, 0, 0))  # Transparent surface
 
@@ -142,7 +144,7 @@ class Block:
                         self.worldy),
 
                 ((self.block_size * base_tile_size_x) - 2,
-                (self.block_size * base_tile_size_y) - 2)
+                 (self.block_size * base_tile_size_y) - 2)
             )
         )
 
@@ -205,9 +207,9 @@ class Block:
 
         # Calculate the base tile size for X and Y axes independently
         base_tile_size_x = 16 * (
-                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
         base_tile_size_y = 16 * (
-                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+                self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Recalculate the block's screen position
         screen_x = self.worldx + camX
@@ -248,7 +250,6 @@ class Block:
             self.build_progress += dt  # Increase build progress by the elapsed time
 
             # Start playing the sound effect if it's not already playing
-            self.who.face_towards(Vector2(self.get_world_position().x, self.get_world_position().y))
             if not self.build_playing:
                 self.build_sound.play(-1)  # Loop indefinitely
                 self.build_playing = True
@@ -356,7 +357,8 @@ class Block:
         masked_stripes = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
         masked_stripes.fill((0, 0, 0, 0))  # Transparent surface
         masked_stripes.blit(self.outline_surface, (0, 0))  # Draw the outline
-        masked_stripes.blit(stripes_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)  # Clip the stripes to the outline
+        masked_stripes.blit(stripes_surface, (0, 0),
+                            special_flags=pygame.BLEND_RGBA_MIN)  # Clip the stripes to the outline
 
         # Render the masked stripes
         screen.blit(masked_stripes, ((self.worldx + camX),
@@ -393,9 +395,9 @@ class Block:
 
         # Calculate the base tile size for X and Y axes independently
         base_tile_size_x = 16 * (
-                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+                self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
         base_tile_size_y = 16 * (
-                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+                self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
 
         # Supersample the sprite for better quality
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
@@ -459,8 +461,6 @@ class Block:
                 inverted_mask.blit(self.mask_surface, (0, 0),
                                    special_flags=pygame.BLEND_RGBA_SUB)  # Subtract the diamond
 
-
-
                 # Create a copy of the sprite
                 masked_sprite = self.sprite.copy()
 
@@ -472,10 +472,14 @@ class Block:
                                             ((self.worldy + camY))))
                 # Draw the diamond outline directly on the screen
                 screen_diamond_points = [
-                    (self.worldx + camX + self.sprite.get_width() // 2, self.worldy + camY + self.sprite.get_height() // 2 - diamond_size),  # Top
-                    (self.worldx + camX + self.sprite.get_width() // 2 + diamond_size, self.worldy + camY + self.sprite.get_height() // 2),  # Right
-                    (self.worldx + camX + self.sprite.get_width() // 2, self.worldy + camY + self.sprite.get_height() // 2 + diamond_size),  # Bottom
-                    (self.worldx + camX + self.sprite.get_width() // 2 - diamond_size, self.worldy + camY + self.sprite.get_height() // 2)   # Left
+                    (self.worldx + camX + self.sprite.get_width() // 2,
+                     self.worldy + camY + self.sprite.get_height() // 2 - diamond_size),  # Top
+                    (self.worldx + camX + self.sprite.get_width() // 2 + diamond_size,
+                     self.worldy + camY + self.sprite.get_height() // 2),  # Right
+                    (self.worldx + camX + self.sprite.get_width() // 2,
+                     self.worldy + camY + self.sprite.get_height() // 2 + diamond_size),  # Bottom
+                    (self.worldx + camX + self.sprite.get_width() // 2 - diamond_size,
+                     self.worldy + camY + self.sprite.get_height() // 2)  # Left
                 ]
                 # Render the diamond outline, clipped to the sprite's bounds
                 self.render_diamond_outline(screen, camX, camY, diamond_points)
@@ -512,7 +516,8 @@ class Player:
         self.angle = 0
         self.angle_to = 0
 
-        self.cam_pos = Vector2(0, 0)
+        self.defpos = (Vector2(graphic_handler.getActiveDisplaySize()) / 2) - (
+                    Vector2(graphic_handler.getWindowSize()) / 2)
 
     def update_position_world(self, x, y):
         self.worldx = x
@@ -528,7 +533,7 @@ class Player:
         """
         # Calculate the direction vector from the player's position to the target
         scale = Vector2(self.graphic_handler.getWindowScale())
-        direction = target - self.cam_pos
+        direction = target - self.get_position()
 
         # Calculate the angle in radians and convert it to degrees
         angle_radians = math.atan2(-direction.y, direction.x)  # Negative y because pygame's y-axis is flipped
@@ -542,7 +547,6 @@ class Player:
                     self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
         ss_sprite = self.graphic_handler.supersample_sprite(self.sprite)
-
 
         if velocity.x != 0 or velocity.y != 0:
             self.angle = math.degrees(math.atan2(-velocity.y, velocity.x)) + 90

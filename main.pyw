@@ -57,10 +57,11 @@ def close():
     sys.exit()
 
 
-build = 13  # BUILD VERSION
-player = Player(0, 0, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
+build = 14  # BUILD VERSION
+scale = Vector2(screen_width / game_width, screen_height / game_height)
+player = Player(game_width, game_height, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(game_width // 2, game_height // 2)
-world = Map(window, 1024, graphic_handler, 8)
+world = Map(window, random.randint(1024, sys.maxsize), graphic_handler, 8)
 
 options_opened = False
 show_stats = False
@@ -229,7 +230,8 @@ while running:
         world.update_animation()
         world.render(camera.pos.x, camera.pos.y)
 
-        string_stats = f"X: {int(camera.get_world_position(16).x)} | Y: {int(camera.get_world_position(16).y)} | FPS: {int(graphic_handler.getFPS())}"
+        ppos = Vector2(player.get_position()) // 16
+        string_stats = f"X: {int(ppos.x - (camera.pos.x // 16))} | Y: {int(ppos.y - (camera.pos.y // 16))} | FPS: {int(graphic_handler.getFPS())}"
         if show_stats:
             string_stats = string_stats + f" | OS: {sys.platform} | Resolution: {screen_width}x{screen_height}"
         testText.update_text(string_stats)
@@ -261,6 +263,10 @@ while running:
             pygame.mixer.music.stop()
     else:
         window.display.fill((0, 0, 0))
+
+        world.update_animation()
+        world.render(0, 0)
+
         title_shadow.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2 + 4, 36))
 
         title.draw_text(window.display, Vector2((game_width - title.get_text_rect().width) / 2, 32))
