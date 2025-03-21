@@ -747,7 +747,7 @@ class Map:
             for tile_data in chunk_tiles:
                 if len(tile_data["frames"]) > 1:  # Check if the tile is animated
                     # Update the animation frame if enough time has passed
-                    current_frame = int(self.animation_timer * 1) % len(tile_data["frames"])
+                    current_frame = int(self.animation_timer * 2) % len(tile_data["frames"])
                     tile_data["current_frame"] = current_frame
                     tile_data["last_update"] = self.animation_timer
 
