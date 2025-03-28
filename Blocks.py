@@ -12,10 +12,6 @@ ITEM_SPRITES = {
     "copper": pygame.image.load("assets/items/item-copper.png")
 }
 
-# Scale item sprites to appropriate size (e.g., 16x16)
-for item_type, sprite in ITEM_SPRITES.items():
-    ITEM_SPRITES[item_type] = pygame.transform.scale(sprite, (32, 32))
-
 
 class Drill(Block):
     def __init__(self, size, sprite, build_time, graphic_handler, mining_power=0.01):
@@ -104,7 +100,7 @@ class Drill(Block):
 class Conveyor(Block):
     def __init__(self, size, sprite, build_time, graphic_handler, speed=1.0, can_rotate=True):
         super().__init__(size, sprite, build_time, graphic_handler, can_rotate=can_rotate)
-        self.speed = speed
+        self.speed = speed / 60
         self.direction = Vector2(0, 0)  # Default right
         self.items = []  # List of items being transported
         self.item_capacity = 3  # Max items on this conveyor segment
@@ -144,35 +140,51 @@ class Conveyor(Block):
         # Render conveyor base
         screen.blit(self.sprite, (render_x, render_y))
 
-        # Get item sprite dimensions
-        sample_sprite = next(iter(ITEM_SPRITES.values())) if ITEM_SPRITES else None
-        item_width = sample_sprite.get_width() if sample_sprite else 16 * scale_factor
-        item_height = sample_sprite.get_height() if sample_sprite else 16 * scale_factor
+    def render_items(self, screen, cam_pos, scale_factor=1):
+
+        # Calculate the scaled camera position
+        camX = cam_pos.x * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)
+        camY = cam_pos.y * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)
+
+        # Calculate base position
+        render_x = self.worldx + camX
+        render_y = self.worldy + camY
+
+        if not self.is_built:
+            return
+
 
         # Calculate conveyor bounds
         conveyor_length = self.size * scale_factor
-        travel_length = conveyor_length - max(item_width, item_height)
 
         # REVERSED Direction vectors (0°=right, 90°=up, 180°=left, 270°=down)
         dir_x, dir_y = {
-            0: (1, 0),   # Now moves left-to-right (reversed from before)
-            90: (0, -1),    # Now moves down-to-up
-            180: (-1, 0),   # Now moves right-to-left
-            270: (0, 1)   # Now moves up-to-down
-        }.get(self.rotation_angle, (1, 0))  # Default to left-to-right
+            0: (-1, 0),   # Now moves left-to-right (reversed from before)
+            90: (0, 1),    # Now moves down-to-up
+            180: (1, 0),   # Now moves right-to-left
+            270: (0, -1)   # Now moves up-to-down
+        }.get(self.rotation_angle, (-1, 0))  # Default to left-to-right
 
         for item in self.items:
             item_sprite = ITEM_SPRITES.get(item['type'])
+            item_sprite = pygame.transform.scale(item_sprite, (
+                12 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX),
+                12 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))
+            )
+
+            item_width = (16 * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX))
+            item_height = (16 * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))
+            travel_length = -conveyor_length
             if not item_sprite:
                 continue
 
             # Calculate position - note we now start at 1.0 and go to 0.0
-            progress = 1.0 - min(max(item['progress'], 0.0), 1.0)  # Inverted progress
+            progress = max((item['progress'] * 2) - 1, -1)
             travel_distance = progress * travel_length
 
             # Base position (conveyor center minus item center)
-            pos_x = render_x + ((conveyor_length * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)) - item_width) / 2
-            pos_y = render_y + ((conveyor_length * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)) - item_height) / 2
+            pos_x = render_x + ((conveyor_length * (self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)) - item_sprite.get_width()) / 2
+            pos_y = render_y + ((conveyor_length * (self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY)) - item_sprite.get_height()) / 2
 
             # Apply movement
             pos_x += dir_x * travel_distance
@@ -194,10 +206,10 @@ class Conveyor(Block):
                 return
         self.next_conveyor = None
 
-    def transfer_items(self):
+    def transfer_items(self, dt):
         """Move items along conveyor"""
         for item in self.items[:]:  # Iterate copy for safe removal
-            item['progress'] += self.speed * 0.016  # Assuming ~60fps
+            item['progress'] += self.speed * dt  # Assuming ~60fps
 
             if item['progress'] >= 1.0:  # Reached end of conveyor
                 if self.next_conveyor and len(
@@ -214,7 +226,7 @@ class Conveyor(Block):
         if self.is_built:
             if not self.next_conveyor:
                 self.update_connections(World.Blocks)
-            self.transfer_items()
+            self.transfer_items(dt)
 
 
 class Storage(Block):

@@ -58,7 +58,7 @@ def close():
     sys.exit()
 
 
-build = 17  # BUILD VERSION
+build = 18  # BUILD VERSION
 scale = Vector2(screen_width / game_width, screen_height / game_height)
 player = Player(game_width, game_height, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(game_width // 2, game_height // 2)
@@ -183,10 +183,10 @@ while running:
             velY -= speed * delta
 
         if keys[pygame.K_1]:
-            placing = Conveyor(1, pygame.image.load("assets/conveyor.png"), 3, graphic_handler)
+            placing = Conveyor(1, pygame.image.load("assets/conveyor.png"), 1, graphic_handler, 5)
 
         if keys[pygame.K_2]:
-            placing = Drill(2, pygame.image.load("assets/command-center.png"), 5, graphic_handler)
+            placing = Drill(2, pygame.image.load("assets/command-center.png"), 3, graphic_handler)
 
         if keys[pygame.K_3]:
             placing = Block(3, pygame.image.load("assets/omega-pad.png"), 8, graphic_handler)
@@ -253,8 +253,15 @@ while running:
                 else:
                     block.update(delta, camera.pos)
 
+        # BLOCK_ITEM RENDER LAYER
+        if len(World.Blocks) > 0:
+            for block in World.Blocks:
+                if isinstance(block, Conveyor):
+                    block.render_items(window.display, camera.pos)
+
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)
+
 
         # PLAYER RENDER LAYER
         player.render(window.display, -camera.pos.x, -camera.pos.y, Vector2(velX, velY))
