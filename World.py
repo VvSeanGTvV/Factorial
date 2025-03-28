@@ -10,7 +10,6 @@ from Graphics import Handler
 
 Blocks = []
 
-
 class Block:
     worldx = 0
     worldy = 0
@@ -21,7 +20,7 @@ class Block:
     pos = Vector2(0, 0)
 
     def __init__(self, size, sprite: Surface, build_time, graphic_handler: Handler, outline_color=(255, 255, 0),
-                 outline_thickness=1, stripe_width=17, stripe_speed=1):
+                 outline_thickness=1, stripe_width=17, stripe_speed=1, can_rotate=False):
         self.size = size * 16
         self.block_size = size
         self.sprite = sprite
@@ -51,22 +50,79 @@ class Block:
             int(self.size * (
                     self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))
 
+        # Animation properties
+        self.animation_offset = 0  # Tracks the diagonal offset of the stripes
+
+        # Rotation properties
+        self.can_rotate = can_rotate
+        self.rotation_angle = 0  # 0, 90, 180, 270 degrees
+        self.rotated_sprite = self.sprite  # Initially unrotated
+        self.original_sprite = pygame.transform.scale(self.sprite, (
+            int(self.size * (
+                    self.graphic_handler.curr_win.get_display().current_w / self.graphic_handler.curr_win.defX)),
+            int(self.size * (
+                    self.graphic_handler.curr_win.get_display().current_h / self.graphic_handler.curr_win.defY))))  # Store the original for re-rotation
+
         # Warning strip configuration
         self.stripe_width = stripe_width  # Width of each stripe
         self.stripe_speed = stripe_speed  # Speed of the animation (pixels per second)
         self.stripes_texture = self.create_diagonal_stripes_texture()
 
-        self.mask_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        self.mask_surface = pygame.Surface(self.original_sprite.get_size(), pygame.SRCALPHA)
         self.mask_surface.fill((0, 0, 0, 0))  # Transparent surface
 
         # Precompute the outline surface
         # Outline configuration
         self.outline_color = outline_color  # Yellow by default
         self.outline_thickness = outline_thickness  # Thickness of the outline
-        self.outline_surface = self.precompute_outline()
+        self.outline_surface = self.precompute_outline(self.original_sprite)
 
-        # Animation properties
-        self.animation_offset = 0  # Tracks the diagonal offset of the stripes
+        # Initialize rotated versions if needed
+        self.rotated_sprites = {}
+        if self.can_rotate:
+            self.create_rotated_sprites()
+
+    def create_rotated_sprites(self):
+        """Pre-create rotated versions of the sprite"""
+        self.rotated_sprites = {
+            0: self.original_sprite,
+            90: pygame.transform.rotate(self.original_sprite, 90),
+            180: pygame.transform.rotate(self.original_sprite, 180),
+            270: pygame.transform.rotate(self.original_sprite, 270)
+        }
+        self.rotated_sprite = self.rotated_sprites[self.rotation_angle]
+
+    def rotate(self):
+        """Rotate the block 90 degrees clockwise if allowed"""
+        if self.can_rotate:
+            self.rotation_angle = (self.rotation_angle + 90) % 360
+            self.rotated_sprite = self.rotated_sprites[self.rotation_angle]
+
+            # Update the scaled sprite for the new rotation
+            self.update_scaled_sprite()
+            self.outline_surface = self.precompute_outline(self.rotated_sprite)
+
+            # Return True if rotation was successful
+            return True
+        return False
+
+    def update_scaled_sprite(self):
+        """Update the scaled version of the current sprite"""
+        display_w = self.graphic_handler.curr_win.get_display().current_w
+        display_h = self.graphic_handler.curr_win.get_display().current_h
+
+        self.sprite = pygame.transform.scale(
+            self.rotated_sprite,
+            (int(self.size * (display_w / self.graphic_handler.curr_win.defX)),
+             int(self.size * (display_h / self.graphic_handler.curr_win.defY))
+             )
+        )
+
+    def handle_key_press(self, key):
+        """Handle key presses during placement"""
+        if key == pygame.K_r and self.can_rotate:
+            return self.rotate()
+        return False
 
     def create_diagonal_stripes_texture(self):
         """
@@ -269,17 +325,17 @@ class Block:
         self.animation_offset += self.stripe_speed * dt
         self.animation_offset %= self.stripe_width * 2  # Wrap around to create a seamless loop
 
-    def precompute_outline(self):
+    def precompute_outline(self, sprite: Surface):
         """
         Precompute the outline of the sprite and save it to a surface.
         """
         # Create a surface for the outline
-        outline_surface = pygame.Surface(self.sprite.get_size(), pygame.SRCALPHA)
+        outline_surface = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
         outline_surface.fill((0, 0, 0, 0))  # Transparent surface
 
         # Get the sprite's pixels as a 2D array of colors
-        sprite_pixels = pygame.surfarray.array3d(self.sprite)
-        sprite_width, sprite_height = self.sprite.get_size()
+        sprite_pixels = pygame.surfarray.array3d(sprite)
+        sprite_width, sprite_height = sprite.get_size()
 
         # Create a visited mask to track processed pixels
         visited = [[False for _ in range(sprite_height)] for _ in range(sprite_width)]
@@ -569,28 +625,81 @@ class Player:
 class Tile:
 
     def preload_tiles(self, tile_set):
-        """Preloads tile images and stores them in a 1D list."""
-        return [pygame.image.load("assets/" + tile) for tile in tile_set]
+        """Preloads tile images with error handling"""
+        loaded = []
+        for tile in tile_set:
+            try:
+                img = pygame.image.load("assets/" + tile).convert_alpha()
+                loaded.append(img)
+            except:
+                print(f"Failed to load tile: assets/{tile}")
 
-    def __init__(self, sprite_list: list[str], item=None, animated=False):
-        """
-        Tile, a class that has item drop and variantions sprite.
-        :param sprite_list: Creates a preloaded_tiles (more primarily in "assets/")
-        :param animated: if this Tile is animated (uses sprite_list as animation)
-        """
+                # Create a placeholder
+                surf = pygame.Surface((16, 16), pygame.SRCALPHA)
+                surf.fill((255, 0, 255))  # Magenta placeholder
+                loaded.append(surf)
+        return loaded
 
+    def __init__(self, sprite_list: list[str], item=None, animated=False, overlay_list: list[str] = None):
+        """
+        Tile with support for animations and overlays.
+        :param sprite_list: Base tile sprites
+        :param item: Dropped item when mined
+        :param animated: Whether the tile is animated
+        :param overlay_list: Overlay sprites (e.g., ores)
+        """
         self.sprite_list = self.preload_tiles(sprite_list)
         self.item = item
         self.has_drop = item is not None
         self.animation_frames = self.variants = len(self.sprite_list)
 
-        # USED FOR ANIMATED TILE
+        # Overlay properties
+        self.has_overlay = overlay_list is not None
+        if self.has_overlay:
+            self.overlay_list = self.preload_tiles(overlay_list)
+            self.overlay_variants = len(self.overlay_list)
+        else:
+            self.overlay_list = []
+            self.overlay_variants = 0
+
+        # Animation properties
         self.animated = animated
         self.current_frame = 0
 
+        # Track remaining resources for mining
+        self.remaining_richness = 1.0 if self.is_ore else 0.0
+        self.mining_progress = 0.0
+
     def get_sprite(self, variant):
+        """Returns the base tile sprite for the given variant."""
         return self.sprite_list[variant % self.variants]
 
+    def get_overlay(self, variant):
+        """Returns the overlay sprite for the given variant."""
+        if self.has_overlay:
+            return self.overlay_list[variant % self.overlay_variants]
+        return None
+
+    @property
+    def is_ore(self):
+        """Check if this tile contains mineable ore"""
+        return isinstance(self.item, dict) and 'type' in self.item
+
+    def mine(self, amount):
+        """
+        Mine resources from this tile
+        Returns: (item_type, amount_mined) or None if nothing left
+        """
+        if not self.is_ore or self.remaining_richness <= 0:
+            return None
+
+        amount_mined = min(amount, self.remaining_richness)
+        self.remaining_richness -= amount_mined
+
+        if self.remaining_richness <= 0:
+            self.has_drop = False  # No more drops after depleted
+
+        return (self.item['type'], amount_mined * self.item.get('richness', 1.0))
 
 
 
@@ -618,7 +727,11 @@ class Map:
                 "name": "desert",
                 "temperature_range": (0.0, 0.33),
                 "humidity_range": (0.0, 0.5),
-                "tile": Tile(["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"]),
+                "tile": Tile(
+                    ["gold-sand1.png", "gold-sand2.png", "gold-sand3.png"],
+                    item={'type': 'copper', 'richness': 0.8},  # 80% copper richness
+                    overlay_list=["ore-copper1.png", "ore-copper2.png", "ore-copper3.png"]
+                )
             },
             {
                 "name": "mountain",
@@ -713,6 +826,19 @@ class Map:
         # Default biome if no match is found
         return self.biome_rules[0]
 
+    def get_tile_at_grid(self, grid_x, grid_y):
+        """
+        Get the Tile object at specific grid coordinates
+        Returns: Tile object or None if out of bounds
+        """
+        # Convert grid coords to world coords
+        world_x = grid_x * self.chunk_size
+        world_y = grid_y * self.chunk_size
+
+        # Get the biome for this position
+        biome = self.get_biome(world_x, world_y)
+        return biome["tile"] if biome else None
+
     def get_tile(self, x, y):
         """Selects a tile based on biome and noise values."""
         # Get the biome for the current tile
@@ -752,37 +878,45 @@ class Map:
                     tile_data["last_update"] = self.animation_timer
 
     def load_chunk(self, chunk_x, chunk_y, tile_size):
-        """Loads a chunk of tiles and caches them."""
+        """Loads a chunk of tiles with animations and overlays."""
         chunk_tiles = []
         for y in range(chunk_y * self.chunk_size, (chunk_y + 1) * self.chunk_size):
             for x in range(chunk_x * self.chunk_size, (chunk_x + 1) * self.chunk_size):
-                # Get the biome for the current tile
                 biome = self.get_biome(x, y)
                 biome_tile = biome["tile"]
 
-                # If the tile is animated, preload all animation frames and initialize animation state
+                # Handle base tile (animated or static)
                 if biome_tile.animated:
-                    tile_frames = []
+                    # Preload all animation frames
+                    base_frames = []
                     for frame in biome_tile.sprite_list:
-                        tile_sprite = pygame.transform.scale(frame, (tile_size, tile_size))
-                        tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
-                        tile_frames.append(tile_sprite)
-                    # Store the frames and the current animation state for this tile
-                    chunk_tiles.append({
-                        "frames": tile_frames,
-                        "current_frame": 0,  # Initialize animation state
-                        "last_update": self.animation_timer
-                    })
+                        scaled = pygame.transform.scale(frame, (tile_size, tile_size))
+                        scaled = self.graphic_handler.supersample_sprite(scaled)
+                        base_frames.append(scaled)
                 else:
-                    # For non-animated tiles, preload a single frame
-                    tile_sprite = self.get_tile(x, y)
-                    tile_sprite = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
-                    tile_sprite = self.graphic_handler.supersample_sprite(tile_sprite)
-                    chunk_tiles.append({
-                        "frames": [tile_sprite],  # Store as a list for consistency
-                        "current_frame": 0,  # Non-animated tiles only have one frame
-                        "last_update": None  # No animation state needed
-                    })
+                    # Single frame for static tiles
+                    base_frame = pygame.transform.scale(
+                        biome_tile.get_sprite(0), (tile_size, tile_size))
+                    base_frames = [self.graphic_handler.supersample_sprite(base_frame)]
+
+                # Handle overlay (if exists)
+                overlay_frame = None
+                if biome_tile.has_overlay:
+                    # Use noise to determine if overlay should appear
+                    overlay_noise = self.noise_generator.noise2(x * 0.1, y * 0.1)
+                    if (overlay_noise + 1) / 2 > 0.8:  # 20% chance
+                        overlay = biome_tile.get_overlay(int(abs(overlay_noise) * biome_tile.overlay_variants))
+                        overlay_frame = pygame.transform.scale(overlay, (tile_size, tile_size))
+                        overlay_frame = self.graphic_handler.supersample_sprite(overlay_frame)
+
+                        # Store tile data
+                chunk_tiles.append({
+                      "frames": base_frames,
+                      "current_frame": 0,
+                      "last_update": self.animation_timer if biome_tile.animated else None,
+                      "overlay": overlay_frame,
+                      "is_animated": biome_tile.animated
+                })
 
         self.loaded_chunks[(chunk_x, chunk_y)] = chunk_tiles
 
@@ -839,6 +973,7 @@ class Map:
         for chunk_coords in chunks_to_unload:
             self.unload_chunk(*chunk_coords)  # If on list, unload the chunk make it not render to the camera.
 
+
         # List to store tiles and their positions for batch rendering
         batch_tiles = []  # Cache all tiles and their positions for batch rendering
 
@@ -863,6 +998,10 @@ class Map:
                         # Use the tile's current animation frame
                         tile_sprite = tile_data["frames"][tile_data["current_frame"]]
                         batch_tiles.append((tile_sprite, (render_x, render_y)))
+
+                        # Add overlay if exists
+                        if tile_data["overlay"]:
+                            batch_tiles.append((tile_data["overlay"], (render_x, render_y)))
 
         # Clear the scaled surface
         self.scaled_surface.fill((0, 0, 0))  # Fill with background color

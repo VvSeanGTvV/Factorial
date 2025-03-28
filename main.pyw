@@ -9,6 +9,7 @@ import ctypes
 
 import Mathf
 import World
+from Blocks import Drill, Conveyor
 from Graphics import Handler, Window, TextSprite
 from UI import Button
 from World import Player, Camera, Map, Block
@@ -57,11 +58,11 @@ def close():
     sys.exit()
 
 
-build = 16  # BUILD VERSION
+build = 17  # BUILD VERSION
 scale = Vector2(screen_width / game_width, screen_height / game_height)
 player = Player(game_width, game_height, pygame.image.load("assets/player/halberd-ship.png"), 24, graphic_handler)
 camera = Camera(game_width // 2, game_height // 2)
-world = Map(window, random.randint(1024, sys.maxsize), graphic_handler, 8)
+world = Map(window, 512, graphic_handler, 8)
 
 options_opened = False
 show_stats = False
@@ -156,6 +157,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        elif event.type == pygame.KEYDOWN:
+            if placing is not None:
+                placing.handle_key_press(event.key)
+
+
         elif event.type == pygame.MOUSEBUTTONDOWN and in_game:
             mouse_pos = pygame.mouse.get_pos()
             for block in World.Blocks:  # Assuming `blocks` is a list of all blocks
@@ -177,10 +183,10 @@ while running:
             velY -= speed * delta
 
         if keys[pygame.K_1]:
-            placing = Block(1, pygame.image.load("assets/stone-melter.png"), 3, graphic_handler)
+            placing = Conveyor(1, pygame.image.load("assets/conveyor.png"), 3, graphic_handler)
 
         if keys[pygame.K_2]:
-            placing = Block(2, pygame.image.load("assets/command-center.png"), 5, graphic_handler)
+            placing = Drill(2, pygame.image.load("assets/command-center.png"), 5, graphic_handler)
 
         if keys[pygame.K_3]:
             placing = Block(3, pygame.image.load("assets/omega-pad.png"), 8, graphic_handler)
@@ -240,7 +246,12 @@ while running:
         if len(World.Blocks) > 0:
             for block in World.Blocks:
                 block.render(window.display, camera.pos)
-                block.update(delta, camera.pos)
+                if isinstance(block, Drill):
+                    block.update(delta, camera.pos, world)
+                elif isinstance(block, Conveyor):
+                    block.update(delta, camera.pos)
+                else:
+                    block.update(delta, camera.pos)
 
         if isinstance(placing, Block):
             placing.render(window.display, camera.pos)
