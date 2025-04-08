@@ -103,7 +103,7 @@ class Conveyor(Block):
         self.speed = speed / 60
         self.direction = Vector2(0, 0)  # Default right
         self.items = []  # List of items being transported
-        self.item_capacity = 3  # Max items on this conveyor segment
+        self.item_capacity = 1  # Max items on this conveyor segment
         self.next_conveyor = None  # Connected conveyor in direction
 
         self.rotation_angle = 90
